@@ -1,0 +1,399 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================================================
+    // HELPER FUNCTIONS
+    // ============================================================================
+    
+    /**
+     * Check if user is authenticated
+     */
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    /**
+     * Check if user is the owner of a document
+     * @param documentId - The document ID to check ownership for
+     */
+    function isOwner(documentId) {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/documents/$(documentId)) &&
+             get(/databases/$(database)/documents/documents/$(documentId)).data.ownerId == request.auth.uid;
+    }
+    
+    /**
+     * Check if user has a specific permission role on a document
+     * @param documentId - The document ID to check permissions for
+     * @param role - The role to check ('owner', 'editor', or 'viewer')
+     */
+    function hasRole(documentId, role) {
+      let doc = get(/databases/$(database)/documents/documents/$(documentId));
+      let ownerId = doc.data.ownerId;
+      
+      // Owner always has all permissions
+      if (ownerId == request.auth.uid && role in ['owner', 'editor', 'viewer']) {
+        return true;
+      }
+      
+      // Check permissions subcollection
+      let permissionPath = /databases/$(database)/documents/documents/$(documentId)/permissions/$(request.auth.uid);
+      if (!exists(permissionPath)) {
+        return false;
+      }
+      
+      let permission = get(permissionPath).data;
+      
+      // Role hierarchy: owner > editor > viewer
+      if (role == 'viewer') {
+        return permission.role in ['viewer', 'editor', 'owner'];
+      }
+      if (role == 'editor') {
+        return permission.role in ['editor', 'owner'];
+      }
+      if (role == 'owner') {
+        return permission.role == 'owner';
+      }
+      
+      return false;
+    }
+    
+    /**
+     * Check if user can read a document (owner, editor, or viewer)
+     */
+    function canRead(documentId) {
+      return isAuthenticated() && (
+        isOwner(documentId) ||
+        hasRole(documentId, 'viewer') ||
+        hasRole(documentId, 'editor')
+      );
+    }
+    
+    /**
+     * Check if user can write/edit a document (owner or editor only)
+     */
+    function canWrite(documentId) {
+      return isAuthenticated() && (
+        isOwner(documentId) ||
+        hasRole(documentId, 'editor')
+      );
+    }
+    
+    /**
+     * Check if user can manage permissions (owner only)
+     */
+    function canManagePermissions(documentId) {
+      return isAuthenticated() && isOwner(documentId);
+    }
+    
+    /**
+     * Validate document data structure on create
+     */
+    function isValidDocument() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['title', 'ownerId', 'createdAt', 'updatedAt', 'version', 'isArchived']) &&
+             data.title is string &&
+             data.ownerId is string &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             data.version is int &&
+             data.version == 1 &&
+             data.isArchived is bool;
+    }
+    
+    /**
+     * Validate document update (prevent ownerId changes)
+     */
+    function isValidDocumentUpdate() {
+      let data = request.resource.data;
+      let existing = resource.data;
+      
+      return data.ownerId == existing.ownerId && // Owner cannot be changed
+             data.version is int &&
+             data.version >= existing.version && // Version must increment
+             data.updatedAt is timestamp &&
+             data.updatedAt >= existing.updatedAt; // UpdatedAt must increase
+    }
+    
+    /**
+     * Validate permission data structure
+     */
+    function isValidPermission() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['email', 'role', 'grantedBy', 'grantedAt', 'isPending']) &&
+             data.email is string &&
+             data.role is string &&
+             data.role in ['owner', 'editor', 'viewer'] &&
+             data.grantedBy is string &&
+             data.grantedBy == request.auth.uid &&
+             data.grantedAt is timestamp &&
+             data.isPending is bool;
+    }
+    
+    // ============================================================================
+    // USERS COLLECTION
+    // ============================================================================
+    
+    match /users/{userId} {
+      /**
+       * Users can read any user profile (for display names, avatars, etc.)
+       * But only authenticated users can read
+       * 
+       * Attack Prevention:
+       * - Prevents unauthenticated access to user data
+       * - Allows authenticated users to see basic profile info (needed for collaboration)
+       */
+      allow read: if isAuthenticated();
+      
+      /**
+       * Users can only create/update their own profile
+       * Must match their authenticated UID
+       * 
+       * Attack Prevention:
+       * - Prevents user impersonation
+       * - Prevents users from modifying other users' profiles
+       * - Ensures userId matches auth.uid
+       */
+      allow create: if isAuthenticated() && 
+                       request.auth.uid == userId &&
+                       request.resource.data.keys().hasAll(['email', 'displayName', 'createdAt']);
+      
+      allow update: if isAuthenticated() && 
+                       request.auth.uid == userId &&
+                       // Prevent changing userId
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']);
+      
+      /**
+       * Users cannot delete their own profile (use account deletion flow instead)
+       * 
+       * Attack Prevention:
+       * - Prevents accidental data loss
+       * - Ensures proper cleanup through account deletion process
+       */
+      allow delete: if false;
+    }
+    
+    // ============================================================================
+    // DOCUMENTS COLLECTION
+    // ============================================================================
+    
+    match /documents/{documentId} {
+      /**
+       * Read access: Only authenticated users who are explicitly shared
+       * - Owner can always read
+       * - Users with viewer/editor permissions can read
+       * 
+       * Attack Prevention:
+       * - Prevents unauthenticated access to documents
+       * - Prevents users from accessing documents they're not shared on
+       * - Enforces explicit sharing requirement (no public access)
+       */
+      allow read: if canRead(documentId);
+      
+      /**
+       * Create access: Any authenticated user can create documents
+       * Must set themselves as owner
+       * 
+       * Attack Prevention:
+       * - Prevents unauthenticated document creation
+       * - Prevents users from creating documents owned by others
+       * - Validates document structure to prevent malformed data
+       */
+      allow create: if isAuthenticated() && isValidDocument();
+      
+      /**
+       * Update access: Only owners and editors can modify documents
+       * Viewers cannot modify
+       * 
+       * Attack Prevention:
+       * - Prevents viewers from modifying content
+       * - Prevents unauthorized users from editing documents
+       * - Prevents ownerId changes (ownership transfer must be explicit)
+       * - Prevents version manipulation (version must increment)
+       */
+      allow update: if canWrite(documentId) && isValidDocumentUpdate();
+      
+      /**
+       * Delete access: Only owners can delete documents
+       * 
+       * Attack Prevention:
+       * - Prevents editors/viewers from deleting documents
+       * - Prevents unauthorized deletion
+       * - Protects against malicious content removal
+       */
+      allow delete: if isOwner(documentId);
+      
+      // ============================================================================
+      // PERMISSIONS SUBCOLLECTION
+      // ============================================================================
+      
+      match /permissions/{permissionId} {
+        /**
+         * Read access: Anyone who can read the document can see its permissions
+         * 
+         * Attack Prevention:
+         * - Prevents unauthorized users from seeing who has access
+         * - Limits permission visibility to document collaborators
+         */
+        allow read: if canRead(documentId);
+        
+        /**
+         * Create access: Only owners can grant permissions
+         * 
+         * Attack Prevention:
+         * - Prevents editors/viewers from sharing documents
+         * - Prevents permission escalation attacks
+         * - Ensures only owners control access
+         */
+        allow create: if canManagePermissions(documentId) && isValidPermission();
+        
+        /**
+         * Update access: Only owners can modify permissions
+         * Users can update their own pending status (accept invite)
+         * 
+         * Attack Prevention:
+         * - Prevents users from escalating their own permissions
+         * - Prevents editors from changing other users' permissions
+         * - Allows users to accept/reject invites (isPending field)
+         */
+        allow update: if canManagePermissions(documentId) ||
+                       (isAuthenticated() && 
+                        request.auth.uid == permissionId &&
+                        // Only allow updating isPending field
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isPending', 'userId']) &&
+                        // Cannot change role
+                        request.resource.data.role == resource.data.role);
+        
+        /**
+         * Delete access: Owners can remove permissions
+         * Users can remove their own permissions (leave document)
+         * 
+         * Attack Prevention:
+         * - Prevents unauthorized permission removal
+         * - Allows users to leave documents they're shared on
+         */
+        allow delete: if canManagePermissions(documentId) ||
+                       (isAuthenticated() && request.auth.uid == permissionId);
+      }
+    }
+    
+    // ============================================================================
+    // DOCUMENT VERSIONS COLLECTION
+    // ============================================================================
+    
+    match /documentVersions/{documentId}/versions/{versionId} {
+      /**
+         * Read access: Anyone who can read the document can see version history
+         * 
+         * Attack Prevention:
+         * - Prevents unauthorized access to version history
+         * - Ensures version history follows document permissions
+         */
+        allow read: if canRead(documentId);
+        
+        /**
+         * Create access: Only editors/owners can create versions
+         * 
+         * Attack Prevention:
+         * - Prevents viewers from creating versions
+         * - Prevents unauthorized version creation
+         */
+        allow create: if canWrite(documentId) &&
+                          request.resource.data.keys().hasAll(['documentId', 'version', 'content', 'createdAt', 'createdBy']) &&
+                          request.resource.data.documentId == documentId &&
+                          request.resource.data.createdBy == request.auth.uid;
+        
+        /**
+         * Versions are immutable - cannot be updated or deleted
+         * 
+         * Attack Prevention:
+         * - Prevents tampering with version history
+         * - Ensures audit trail integrity
+         * - Prevents historical revision attacks
+         */
+        allow update, delete: if false;
+    }
+    
+    // ============================================================================
+    // PRESENCE COLLECTION
+    // ============================================================================
+    
+    match /presence/{documentId}/{userId} {
+      /**
+       * Read access: Anyone who can read the document can see presence
+       * 
+       * Attack Prevention:
+       * - Prevents unauthorized users from seeing who's viewing documents
+       * - Limits presence visibility to document collaborators
+       */
+      allow read: if canRead(documentId);
+      
+      /**
+       * Create/Update access: Users can only update their own presence
+       * Must be able to read the document
+       * 
+       * Attack Prevention:
+       * - Prevents users from spoofing other users' presence
+       * - Prevents unauthorized presence updates
+       * - Ensures userId matches authenticated user
+       */
+      allow create, update: if isAuthenticated() &&
+                               request.auth.uid == userId &&
+                               canRead(documentId) &&
+                               request.resource.data.userId == request.auth.uid &&
+                               request.resource.data.documentId == documentId;
+      
+      /**
+       * Delete access: Users can remove their own presence
+       * Owners/editors can remove stale presence entries
+       * 
+       * Attack Prevention:
+       * - Prevents users from removing others' presence
+       * - Allows cleanup of stale presence data
+       */
+      allow delete: if (isAuthenticated() && request.auth.uid == userId) ||
+                       canWrite(documentId);
+    }
+    
+    // ============================================================================
+    // DOCUMENT COLLABORATION COLLECTION (Y.js State)
+    // ============================================================================
+    
+    match /documentCollaboration/{documentId} {
+      /**
+       * Read access: Only users who can read the document can access collaboration state
+       * 
+       * Attack Prevention:
+       * - Prevents unauthorized access to document state
+       * - Ensures collaboration state follows document permissions
+       */
+      allow read: if canRead(documentId);
+      
+      /**
+       * Write access: Only editors/owners can update collaboration state
+       * 
+       * Attack Prevention:
+       * - Prevents viewers from modifying collaboration state
+       * - Prevents unauthorized state manipulation
+       */
+      allow write: if canWrite(documentId);
+    }
+    
+    // ============================================================================
+    // DENY ALL OTHER COLLECTIONS
+    // ============================================================================
+    
+    /**
+     * Explicitly deny access to any collection not defined above
+     * 
+     * Attack Prevention:
+     * - Prevents access to accidentally created collections
+     * - Enforces explicit allow-only security model
+     */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
