@@ -3,6 +3,7 @@
 import { useNavigate } from 'react-router-dom';
 import { type DocumentWithRole } from '@/features/documents/types/document.types';
 import { formatDistanceToNow } from '@/lib/utils/date';
+import { Button } from '../ui/button';
 
 interface DocumentCardProps {
   document: DocumentWithRole;
@@ -41,7 +42,7 @@ export function DocumentCard({
     }
   };
 
-  const timeAgo = formatDistanceToNow(document.updatedAt, { addSuffix: true });
+const timeAgo = formatDistanceToNow(document.updatedAt);
 
   return (
     <div
@@ -89,20 +90,20 @@ export function DocumentCard({
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           {document.isOwner && (
             <>
-              <button
+              <Button
                 onClick={handleArchive}
-                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 bg-gray-200 rounded"
                 disabled={isDeleting}
               >
                 {document.isArchived ? 'Unarchive' : 'Archive'}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleDelete}
-                className="px-3 py-1 text-sm text-red-600 hover:text-red-900 hover:bg-red-50 rounded"
+                className="px-3 py-1 text-sm text-black/90 bg-red-400 rounded"
                 disabled={isDeleting}
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
+              </Button>
             </>
           )}
         </div>
