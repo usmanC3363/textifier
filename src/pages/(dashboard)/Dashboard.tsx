@@ -6,6 +6,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useDocuments, useDocumentMutations } from '@/features/documents/hooks/useDocuments';
 import { DocumentList } from '@/components/dashboard/DocumentList';
 import { CreateDocumentDialog } from '@/components/dashboard/CreateDocumentDialog';
+import { Button } from '@/components/ui/button';
 
 /**
  * Dashboard Page - Main document management interface
@@ -102,7 +103,7 @@ function DashboardContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 min-w-screen w-full">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -111,13 +112,14 @@ function DashboardContent() {
             <p className="text-gray-600 mt-1">
               {filteredDocuments.length} document{filteredDocuments.length !== 1 ? 's' : ''}
             </p>
+
           </div>
           <button
             onClick={() => setIsCreateDialogOpen(true)}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-md"
             disabled={mutationLoading}
           >
-            + New Document
+            <span className='text-xl'>+</span> &nbsp;New Document
           </button>
         </div>
 
