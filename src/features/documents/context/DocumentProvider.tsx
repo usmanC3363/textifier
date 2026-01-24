@@ -1,4 +1,4 @@
-import { DocumentContext } from "./document-context";
+import { DocumentContext } from './document-context';
 
 export function DocumentProvider({
   documentId,

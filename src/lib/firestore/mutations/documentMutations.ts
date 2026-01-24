@@ -6,6 +6,7 @@ import {
   deleteDoc,
   serverTimestamp,
   writeBatch,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type {
@@ -34,6 +35,14 @@ export async function createDocument(
       isArchived: false,
     });
 
+    await addDoc(collection(db, 'documents', docRef.id, 'permissions'), {
+      userId,
+      email: null, //  resolve later
+      role: 'owner',
+      grantedBy: userId,
+      grantedAt: serverTimestamp(),
+      isPending: false,
+    });
     return docRef.id;
   } catch (error) {
     console.error('Error creating document:', error);
@@ -122,4 +131,53 @@ export async function archiveDocument(
     console.error('Error archiving document:', error);
     throw error;
   }
+}
+
+export async function inviteUserToDocument({
+  documentId,
+  email,
+  role,
+  grantedBy,
+}: {
+  documentId: string;
+  email: string;
+  role: 'editor' | 'viewer';
+  grantedBy: string;
+}) {
+  await addDoc(collection(db, 'documents', documentId, 'permissions'), {
+    userId: null,
+    email,
+    role,
+    grantedBy,
+    grantedAt: serverTimestamp(),
+    isPending: true,
+  });
+}
+
+export async function inviteCollaboratorByEmail(
+  documentId: string,
+  email: string,
+  role: 'editor' | 'viewer',
+  invitedByUid: string
+) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Simple deterministic hash (no crypto lib needed)
+  const emailHash = btoa(normalizedEmail);
+
+  const permissionRef = doc(
+    db,
+    'documents',
+    documentId,
+    'permissions',
+    emailHash
+  );
+
+  await setDoc(permissionRef, {
+    email: normalizedEmail,
+    role,
+    isPending: true,
+    invitedBy: invitedByUid,
+    createdAt: serverTimestamp(),
+  });
 }

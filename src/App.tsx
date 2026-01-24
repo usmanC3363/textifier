@@ -9,19 +9,45 @@ import DashboardPage from '@/pages/(dashboard)/Dashboard';
 import DashboardLayout from './layouts/DashboardLayout';
 import DocumentPage from './pages/documents/DocumentPage';
 
-
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/login" element={<DashboardLayout><LoginPage /></DashboardLayout>} />
-          <Route path="/signup" element={<DashboardLayout><SignUpPage /></DashboardLayout>} />
-          
+          <Route
+            path="/login"
+            element={
+              <DashboardLayout>
+                <LoginPage />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <DashboardLayout>
+                <SignUpPage />
+              </DashboardLayout>
+            }
+          />
 
-          <Route path="/dashboard" element={<DashboardLayout><DashboardPage /></DashboardLayout>} />
+          <Route
+            path="/dashboard"
+            element={
+              <DashboardLayout>
+                <DashboardPage />
+              </DashboardLayout>
+            }
+          />
 
-          <Route path="/document/:documentId" element={<DashboardLayout><DocumentPage /></DashboardLayout>} />
+          <Route
+            path="/document/:documentId"
+            element={
+              <DashboardLayout>
+                <DocumentPage />
+              </DashboardLayout>
+            }
+          />
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           {/* 404 catch-all */}

@@ -1,6 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
 import { type User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import * as authService from '@/features/auth/services/authService';
@@ -11,9 +17,8 @@ import type {
   SignInCredentials,
 } from '@/features/auth/types/auth.types';
 
-import {
-  mapFirebaseUser,
-} from '@/features/auth/types/auth.types';
+import { mapFirebaseUser } from '@/features/auth/types/auth.types';
+import { resolvePendingInvites } from '@/features/auth/hooks/resolve-pending-invites';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -23,7 +28,7 @@ interface AuthProviderProps {
 
 /**
  * AuthProvider - Provides authentication context to the entire app
- * 
+ *
  * Features:
  * - Persistent auth state (survives page refreshes)
  * - Automatic auth state synchronization
@@ -45,12 +50,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setError(null);
 
           if (firebaseUser) {
-            // User is signed in
-            const authUser = mapFirebaseUser(firebaseUser);
-            setUser(authUser);
-          } else {
-            // User is signed out
-            setUser(null);
+            const mappedUser = mapFirebaseUser(firebaseUser);
+
+            setUser(mappedUser); // set immediately
+
+            if (mappedUser?.email) {
+              resolvePendingInvites({
+                uid: mappedUser.uid,
+                email: mappedUser.email,
+              }).catch(console.error); // never block auth
+            }
           }
         } catch (err) {
           setError(err instanceof Error ? err : new Error('Auth state error'));
@@ -60,7 +69,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       },
       (err) => {
-        setError(err instanceof Error ? err : new Error('Auth state listener error'));
+        setError(
+          err instanceof Error ? err : new Error('Auth state listener error')
+        );
         setLoading(false);
       }
     );
@@ -119,7 +130,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await authService.signInWithGoogle();
       // Auth state will update automatically via onAuthStateChanged
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Google sign in failed');
+      const error =
+        err instanceof Error ? err : new Error('Google sign in failed');
       setError(error);
       throw error;
     } finally {
@@ -162,7 +174,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Update local state
       setUser((prev) => (prev ? { ...prev, displayName } : null));
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Update display name failed');
+      const error =
+        err instanceof Error ? err : new Error('Update display name failed');
       setError(error);
       throw error;
     }
@@ -184,7 +197,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 /**
  * useAuth hook - Access auth context
- * 
+ *
  * @throws Error if used outside AuthProvider
  */
 export function useAuth(): AuthContextType {

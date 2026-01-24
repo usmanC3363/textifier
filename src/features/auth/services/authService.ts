@@ -44,10 +44,7 @@ export async function signUp(
 /**
  * Sign in with email and password
  */
-export async function signIn(
-  email: string,
-  password: string
-): Promise<User> {
+export async function signIn(email: string, password: string): Promise<User> {
   const userCredential = await signInWithEmailAndPassword(
     auth,
     email,

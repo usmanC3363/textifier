@@ -12,7 +12,11 @@ import {
   collectionGroup,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import type { Document, DocumentWithRole, DocumentPermission } from '@/features/documents/types/document.types';
+import type {
+  Document,
+  DocumentWithRole,
+  DocumentPermission,
+} from '@/features/documents/types/document.types';
 
 /**
  * Convert Firestore document to Document type
@@ -82,7 +86,6 @@ export function subscribeToSharedDocuments(
   callback: (documents: DocumentWithRole[]) => void,
   options?: { includeArchived?: boolean }
 ): () => void {
-  // Query permissions where user is shared
   const permissionsQuery = query(
     collectionGroup(db, 'permissions'),
     where('userId', '==', userId),
@@ -90,68 +93,73 @@ export function subscribeToSharedDocuments(
     orderBy('grantedAt', 'desc')
   );
 
-  // const documentMap = new Map<string, DocumentWithRole>();
-  const permissionMap = new Map<string, DocumentPermission>();
+  const documentMap = new Map<string, DocumentWithRole>();
+  const documentUnsubscribers = new Map<string, () => void>();
+
+  const updateCallback = () => {
+    const docs = Array.from(documentMap.values());
+    const filtered = options?.includeArchived
+      ? docs
+      : docs.filter((doc) => !doc.isArchived);
+    callback(filtered);
+  };
 
   // Listen to permissions changes
   const unsubscribePermissions = onSnapshot(
     permissionsQuery,
-    async (permissionsSnapshot: QuerySnapshot<DocumentData>) => {
-      // Update permission map
-      permissionMap.clear();
+    (permissionsSnapshot: QuerySnapshot<DocumentData>) => {
+      const currentDocIds = new Set<string>();
+
       permissionsSnapshot.docs.forEach((permDoc) => {
         const permData = permDoc.data();
         const documentId = permDoc.ref.parent.parent?.id;
-        if (documentId) {
-          permissionMap.set(documentId, {
-            id: permDoc.id,
-            userId: permData.userId || null,
-            email: permData.email,
-            role: permData.role,
-            grantedBy: permData.grantedBy,
-            grantedAt: permData.grantedAt?.toDate() || new Date(),
-            isPending: permData.isPending || false,
-          });
-        }
-      });
 
-      // Fetch documents for each permission
-      const documentIds = Array.from(permissionMap.keys());
-      if (documentIds.length === 0) {
-        callback([]);
-        return;
-      }
+        if (!documentId) return;
 
-      // Fetch documents directly by ID
-      // Firestore doesn't support IN queries with >10 items easily, so fetch individually
-      const documentPromises = documentIds.map(async (docId) => {
-        try {
-          const docRef = doc(db, 'documents', docId);
-          const docSnapshot = await getDoc(docRef);
-          
-          if (docSnapshot.exists()) {
-            const document = mapDocumentData(docSnapshot, docId);
-            const permission = permissionMap.get(docId);
-            
-            if (permission && (!options?.includeArchived || !document.isArchived)) {
-              return {
-                ...document,
-                userRole: permission.role,
-                isOwner: false,
-              } as DocumentWithRole;
+        currentDocIds.add(documentId);
+
+        // If we're not already listening to this document, start listening
+        if (!documentUnsubscribers.has(documentId)) {
+          const docRef = doc(db, 'documents', documentId);
+
+          const unsubscribeDoc = onSnapshot(
+            docRef,
+            (docSnapshot) => {
+              if (docSnapshot.exists()) {
+                const document = mapDocumentData(docSnapshot, documentId);
+                documentMap.set(documentId, {
+                  ...document,
+                  userRole: permData.role,
+                  isOwner: false,
+                });
+                updateCallback();
+              } else {
+                documentMap.delete(documentId);
+                updateCallback();
+              }
+            },
+            (error) => {
+              console.error(`Error fetching document ${documentId}:`, error);
+              // Remove from map if we can't access it
+              documentMap.delete(documentId);
+              updateCallback();
             }
-          }
-        } catch (error) {
-          console.error(`Error fetching document ${docId}:`, error);
+          );
+
+          documentUnsubscribers.set(documentId, unsubscribeDoc);
         }
-        return null;
       });
 
-      const documents = (await Promise.all(documentPromises)).filter(
-        (doc): doc is DocumentWithRole => doc !== null
-      );
+      // Clean up listeners for permissions that were removed
+      documentUnsubscribers.forEach((unsubscribe, docId) => {
+        if (!currentDocIds.has(docId)) {
+          unsubscribe();
+          documentUnsubscribers.delete(docId);
+          documentMap.delete(docId);
+        }
+      });
 
-      callback(documents);
+      updateCallback();
     },
     (error) => {
       console.error('Error subscribing to shared documents:', error);
@@ -159,7 +167,12 @@ export function subscribeToSharedDocuments(
     }
   );
 
-  return unsubscribePermissions;
+  // Cleanup function
+  return () => {
+    unsubscribePermissions();
+    documentUnsubscribers.forEach((unsubscribe) => unsubscribe());
+    documentUnsubscribers.clear();
+  };
 }
 
 /**
@@ -240,24 +253,28 @@ export function subscribeToUserDocuments(
  * Get a single document by ID
  * Real-time snapshot listener
  */
+// ✅ With error handling
 export function subscribeToDocument(
   documentId: string,
-  callback: (document: Document | null) => void
-): () => void {
+  onUpdate: (doc: Document | null) => void,
+  onError?: (error: Error) => void
+) {
   const docRef = doc(db, 'documents', documentId);
 
   return onSnapshot(
     docRef,
-    (docSnapshot) => {
-      if (!docSnapshot.exists()) {
-        callback(null);
-        return;
+    (snapshot) => {
+      if (snapshot.exists()) {
+        onUpdate(snapshot.data() as Document);
+      } else {
+        onUpdate(null);
       }
-      callback(mapDocumentData(docSnapshot, documentId));
     },
     (error) => {
-      console.error('Error subscribing to document:', error);
-      callback(null);
+      console.error('Error fetching document:', error);
+      if (onError) {
+        onError(error);
+      }
     }
   );
 }

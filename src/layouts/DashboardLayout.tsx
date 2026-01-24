@@ -7,7 +7,7 @@ interface DashboardLayoutProps {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen w-screen flex">
+    <div className="flex min-h-screen w-screen">
       <main className="flex-1">{children}</main>
     </div>
   );

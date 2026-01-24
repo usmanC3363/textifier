@@ -9,8 +9,8 @@ export function formatDistanceToNow(
     date instanceof Timestamp
       ? date.toDate()
       : typeof date === 'string' || typeof date === 'number'
-      ? new Date(date)
-      : date;
+        ? new Date(date)
+        : date;
 
   const seconds = Math.floor((now.getTime() - then.getTime()) / 1000);
 
