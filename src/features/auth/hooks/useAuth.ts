@@ -3,4 +3,4 @@
  * This maintains consistency with the architecture where features
  * have their own hooks directory
  */
-export { useAuth } from '../../../providers/AuthProvider';
+export { useAuth } from '@/providers/AuthProvider';

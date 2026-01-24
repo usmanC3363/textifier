@@ -3,14 +3,17 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthGuard } from '@/components/auth/AuthGuard';
-import { useDocuments, useDocumentMutations } from '@/features/documents/hooks/useDocuments';
+import {
+  useDocuments,
+  useDocumentMutations,
+} from '@/features/documents/hooks/useDocuments';
 import { DocumentList } from '@/components/dashboard/DocumentList';
 import { CreateDocumentDialog } from '@/components/dashboard/CreateDocumentDialog';
 import { Button } from '@/components/ui/button';
 
 /**
  * Dashboard Page - Main document management interface
- * 
+ *
  * Features:
  * - List documents user owns or has access to
  * - Create new document
@@ -31,12 +34,16 @@ function DashboardContent() {
   const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-  const [filter, setFilter] = useState<'all' | 'owned' | 'shared' | 'archived'>('all');
+  const [filter, setFilter] = useState<'all' | 'owned' | 'shared' | 'archived'>(
+    'all'
+  );
 
   // Get documents with real-time updates
   const { documents, loading } = useDocuments({
-    isArchived: filter === 'archived' ? true : filter !== 'all' ? false : undefined,
-    role: filter === 'owned' ? 'owner' : filter === 'shared' ? 'editor' : undefined,
+    isArchived:
+      filter === 'archived' ? true : filter !== 'all' ? false : undefined,
+    role:
+      filter === 'owned' ? 'owner' : filter === 'shared' ? 'editor' : undefined,
   });
 
   // Document mutations
@@ -103,31 +110,31 @@ function DashboardContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 min-w-screen w-full">
+    <div className="min-w-screen min-h-screen w-full bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
-            <p className="text-gray-600 mt-1">
-              {filteredDocuments.length} document{filteredDocuments.length !== 1 ? 's' : ''}
+            <p className="mt-1 text-gray-600">
+              {filteredDocuments.length} document
+              {filteredDocuments.length !== 1 ? 's' : ''}
             </p>
-
           </div>
           <button
             onClick={() => setIsCreateDialogOpen(true)}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-md"
+            className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white shadow-md hover:bg-blue-700"
             disabled={mutationLoading}
           >
-            <span className='text-xl'>+</span> &nbsp;New Document
+            <span className="text-xl">+</span> &nbsp;New Document
           </button>
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2 mb-6">
+        <div className="mb-6 flex gap-2">
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-md font-medium ${
+            className={`rounded-md px-4 py-2 font-medium ${
               filter === 'all'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -137,7 +144,7 @@ function DashboardContent() {
           </button>
           <button
             onClick={() => setFilter('owned')}
-            className={`px-4 py-2 rounded-md font-medium ${
+            className={`rounded-md px-4 py-2 font-medium ${
               filter === 'owned'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -147,7 +154,7 @@ function DashboardContent() {
           </button>
           <button
             onClick={() => setFilter('shared')}
-            className={`px-4 py-2 rounded-md font-medium ${
+            className={`rounded-md px-4 py-2 font-medium ${
               filter === 'shared'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -157,7 +164,7 @@ function DashboardContent() {
           </button>
           <button
             onClick={() => setFilter('archived')}
-            className={`px-4 py-2 rounded-md font-medium ${
+            className={`rounded-md px-4 py-2 font-medium ${
               filter === 'archived'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'

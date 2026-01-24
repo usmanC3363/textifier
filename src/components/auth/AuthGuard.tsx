@@ -11,26 +11,26 @@ interface AuthGuardProps {
 
 /**
  * AuthGuard - Protects routes by redirecting unauthenticated users
- * 
+ *
  * Usage with Next.js:
  * <AuthGuard onRedirect={(path) => router.push(path)}>
  *   <ProtectedPage />
  * </AuthGuard>
- * 
+ *
  * Usage with React Router:
  * <AuthGuard onRedirect={(path) => navigate(path)}>
  *   <ProtectedPage />
  * </AuthGuard>
- * 
+ *
  * Or use default redirect (requires router setup):
  * <AuthGuard>
  *   <ProtectedPage />
  * </AuthGuard>
  */
-export function AuthGuard({ 
-  children, 
+export function AuthGuard({
+  children,
   redirectTo = '/login',
-  onRedirect 
+  onRedirect,
 }: AuthGuardProps) {
   const { user, loading } = useAuth();
 
@@ -48,8 +48,8 @@ export function AuthGuard({
   // Show loading state while checking auth
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-gray-900"></div>
       </div>
     );
   }

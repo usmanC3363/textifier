@@ -1,8 +1,7 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { InviteCollaboratorDialog } from "../invite-modal";
-import { useDocumentContext } from "@/features/documents/context/useDocumentContext";
-
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { InviteCollaboratorDialog } from '../invite-modal';
+import { useDocumentContext } from '@/features/documents/context/useDocumentContext';
 
 export function ShareButton() {
   const { documentId } = useDocumentContext();
@@ -20,10 +19,7 @@ export function ShareButton() {
         Share
       </Button>
 
-      <InviteCollaboratorDialog
-        open={open}
-        onOpenChange={setOpen}
-      />
+      <InviteCollaboratorDialog open={open} onOpenChange={setOpen} />
     </>
   );
 }

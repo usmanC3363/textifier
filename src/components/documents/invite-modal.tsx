@@ -31,22 +31,20 @@ export function InviteCollaboratorDialog({
 
   const handleInvite = async () => {
     if (!email.trim()) return;
- 
-  
+
     await invite(documentId, email, role);
-  
+
     setEmail('');
     setRole('editor');
     onOpenChange(false);
   };
-  
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Invite collaborator</DialogTitle>
-          <DialogDescription/>
+          <DialogDescription />
         </DialogHeader>
 
         <div className="space-y-4">
@@ -73,18 +71,11 @@ export function InviteCollaboratorDialog({
             </Button>
           </div>
 
-          {error && (
-            <p className="text-sm text-red-500">
-              {error.message}
-            </p>
-          )}
+          {error && <p className="text-sm text-red-500">{error.message}</p>}
         </div>
 
         <DialogFooter>
-          <Button
-            onClick={handleInvite}
-            disabled={loading}
-          >
+          <Button onClick={handleInvite} disabled={loading}>
             {loading ? 'Inviting...' : 'Send invite'}
           </Button>
         </DialogFooter>

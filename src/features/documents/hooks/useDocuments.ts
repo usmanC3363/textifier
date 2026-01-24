@@ -81,12 +81,14 @@ export function useDocuments(filter?: DocumentFilter) {
  * Provides real-time updates
  */
 export function useDocument(documentId: string | null) {
+  const { user } = useAuth(); // ✅ Add this
   const [document, setDocument] = useState<Document | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(!!documentId);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!documentId) {
+    if (!documentId || !user) {
+      // ✅ Check user
       setDocument(null);
       setLoading(false);
       return;
@@ -95,17 +97,25 @@ export function useDocument(documentId: string | null) {
     setLoading(true);
     setError(null);
 
-    // Subscribe to document with real-time updates
-    const unsubscribe = subscribeToDocument(documentId, (doc) => {
-      setDocument(doc);
-      setLoading(false);
-    });
+    const unsubscribe = subscribeToDocument(
+      documentId,
+      (doc) => {
+        setDocument(doc);
+        setLoading(false);
+      },
+      (err) => {
+        // ✅ Add error callback
+        setError(err);
+        setLoading(false);
+      }
+    );
 
-    // Cleanup subscription on unmount
-    return () => {
-      unsubscribe();
-    };
-  }, [documentId]);
+    return () => unsubscribe();
+  }, [documentId, user]); // ✅ Add user to dependencies
+
+  if (!documentId || !user) {
+    return { document: null, loading: false, error: null };
+  }
 
   return { document, loading, error };
 }
@@ -133,7 +143,8 @@ export function useDocumentMutations() {
         );
         return documentId;
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Failed to create document');
+        const error =
+          err instanceof Error ? err : new Error('Failed to create document');
         setError(error);
         throw error;
       } finally {
@@ -154,7 +165,8 @@ export function useDocumentMutations() {
         setError(null);
         await documentMutations.updateDocument(documentId, user.uid, input);
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Failed to update document');
+        const error =
+          err instanceof Error ? err : new Error('Failed to update document');
         setError(error);
         throw error;
       } finally {
@@ -175,7 +187,8 @@ export function useDocumentMutations() {
         setError(null);
         await documentMutations.deleteDocument(documentId);
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Failed to delete document');
+        const error =
+          err instanceof Error ? err : new Error('Failed to delete document');
         setError(error);
         throw error;
       } finally {
@@ -194,9 +207,14 @@ export function useDocumentMutations() {
       try {
         setLoading(true);
         setError(null);
-        await documentMutations.archiveDocument(documentId, user.uid, isArchived);
+        await documentMutations.archiveDocument(
+          documentId,
+          user.uid,
+          isArchived
+        );
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Failed to archive document');
+        const error =
+          err instanceof Error ? err : new Error('Failed to archive document');
         setError(error);
         throw error;
       } finally {

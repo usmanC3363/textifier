@@ -1,8 +1,7 @@
-import { createContext } from "react";
+import { createContext } from 'react';
 
 export interface DocumentContextValue {
   documentId: string;
 }
 
-export const DocumentContext =
-  createContext<DocumentContextValue | null>(null);
+export const DocumentContext = createContext<DocumentContextValue | null>(null);
