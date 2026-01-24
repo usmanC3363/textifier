@@ -7,7 +7,7 @@ import LoginPage from '@/features/auth/pages/LoginPage';
 import SignUpPage from '@/features/auth/pages/SignupPage';
 import DashboardPage from '@/pages/(dashboard)/Dashboard';
 import DashboardLayout from './layouts/DashboardLayout';
-import DocumentPage from './pages/DocumentPage';
+import DocumentPage from './pages/documents/DocumentPage';
 
 
 function App() {
@@ -21,7 +21,7 @@ function App() {
 
           <Route path="/dashboard" element={<DashboardLayout><DashboardPage /></DashboardLayout>} />
 
-          <Route path="/document/:id" element={<DashboardLayout><DocumentPage /></DashboardLayout>} />
+          <Route path="/document/:documentId" element={<DashboardLayout><DocumentPage /></DashboardLayout>} />
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           {/* 404 catch-all */}

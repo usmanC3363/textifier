@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Route, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import DashboardLayout from '@/layouts/DashboardLayout';
 
 /**
  * Login Page Example
@@ -143,6 +144,12 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
+        <div className='flex  w-full justify-center'>
+          <p>Don't have an account? 
+          {/* <Route path="/login" element={<DashboardLayout><LoginPage /></DashboardLayout>}/> */}
+            <span className='underline text-blue-500'>Create Account</span> 
+            </p>
+        </div>
       </div>
     </div>
   );
