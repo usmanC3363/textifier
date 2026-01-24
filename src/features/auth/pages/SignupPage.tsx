@@ -161,6 +161,9 @@ export default function SignUpPage() {
             </button>
           </div>
         </form>
+        <div className='flex  w-full justify-center'>
+          <p>Already have an account? <span className='underline text-blue-500'>Login</span> </p>
+        </div>
       </div>
     </div>
   );
