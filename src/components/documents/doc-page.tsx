@@ -1,47 +1,24 @@
 "use client"
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { PermissionsSheet } from "./settings-panel";
+import { DocTopBar } from "./topbar/doc-topbar";
+import { useDocumentContext } from "@/features/documents/context/useDocumentContext";
 
 
-export default function DocumentPage() {
-  const [open, setOpen] = useState(false);
+
+export default function DocPage() {
+  const [permissionsOpen, setPermissionsOpen] = useState(false);
+
+  const { documentId } = useDocumentContext();
 
   return (
     <section className="min-h-screen flex flex-col bg-muted/40">
       {/* Top Bar */}
-      <header className="flex items-center justify-between px-4 py-2 bg-background border-b">
-        <div className="flex items-center gap-3 min-w-0">
-          <Input
-            disabled
-            placeholder="Untitled document"
-            className="h-9 text-base font-medium border-none shadow-none focus-visible:ring-0 px-0 max-w-xs"
-          />
-          <span className="text-xs text-muted-foreground hidden sm:block">
-            Saved
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setOpen(true)}
-          >
-            Share
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setOpen(true)}
-          >
-            ⋮
-          </Button>
-        </div>
-      </header>
+      <DocTopBar
+        onOpenPermissions={() => setPermissionsOpen(true)}
+      />
 
       {/* Collaborators */}
       <div className="flex items-center gap-2 px-4 py-2">
@@ -67,7 +44,11 @@ export default function DocumentPage() {
       </main>
 
       {/* Permissions / Settings */}
-      <PermissionsSheet open={open} onOpenChange={setOpen} />
-    </section>
+      <PermissionsSheet
+        documentId={documentId}
+        open={permissionsOpen}
+        onOpenChange={setPermissionsOpen}
+      />
+      </section>
   );
 }

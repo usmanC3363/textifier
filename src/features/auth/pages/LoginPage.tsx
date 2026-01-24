@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Route, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import DashboardLayout from '@/layouts/DashboardLayout';
 
 /**
  * Login Page Example
