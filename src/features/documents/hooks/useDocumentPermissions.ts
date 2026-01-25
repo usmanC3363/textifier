@@ -1,5 +1,11 @@
+// hooks/use-document-permissions.ts
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import {
+  collection,
+  onSnapshot,
+  query,
+  orderBy,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { DocumentPermission } from '@/features/documents/types/document.types';
 
@@ -14,44 +20,34 @@ export function useDocumentPermissions(documentId: string | null) {
     setLoading(true);
     setError(null);
 
-    const permissionsRef = collection(
+    const ref = collection(
       db,
       'documents',
       documentId,
       'permissions'
     );
 
-    const q = query(permissionsRef, orderBy('grantedAt', 'asc'));
+    const q = query(ref, orderBy('grantedAt', 'asc'));
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const perms: DocumentPermission[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as Omit<DocumentPermission, 'id'>),
-        }));
-
-        setPermissions(perms);
+        setPermissions(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...(doc.data() as Omit<DocumentPermission, 'id'>),
+          }))
+        );
         setLoading(false);
       },
       (err) => {
-        console.error('Permissions subscription error:', err);
         setError(err);
         setLoading(false);
       }
     );
 
-    return () => unsubscribe();
+    return unsubscribe;
   }, [documentId]);
-
-  // 👇 derive instead of mutating inside effect
-  if (!documentId) {
-    return {
-      permissions: [],
-      loading: false,
-      error: null,
-    };
-  }
 
   return { permissions, loading, error };
 }
