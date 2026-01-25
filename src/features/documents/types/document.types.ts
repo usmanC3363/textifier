@@ -30,6 +30,14 @@ export interface DocumentWithRole extends Document {
   isOwner: boolean;
 }
 
+// permissions.types.ts
+export interface OwnableDocument {
+  userId?: string;
+  ownerId?: string;
+  createdBy?: string;
+}
+
+
 /**
  * Document permission entry
  */

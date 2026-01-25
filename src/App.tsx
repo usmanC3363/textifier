@@ -48,6 +48,8 @@ function App() {
               </DashboardLayout>
             }
           />
+          
+          {/* <Route path="/document/:documentId/permissions/"/> */}
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           {/* 404 catch-all */}
