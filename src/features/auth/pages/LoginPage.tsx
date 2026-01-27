@@ -156,8 +156,7 @@ export default function LoginPage() {
         <div className="flex w-full justify-center">
           <p>
             Don't have an account?
-            {/* <Route path="/login" element={<DashboardLayout><LoginPage /></DashboardLayout>}/> */}
-            <span className="text-blue-500 underline">Create Account</span>
+            <a href='/login' className="text-blue-500 underline">Create Account</a>
           </p>
         </div>
       </div>

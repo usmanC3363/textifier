@@ -8,9 +8,17 @@ import SignUpPage from '@/features/auth/pages/SignupPage';
 import DashboardPage from '@/pages/(dashboard)/Dashboard';
 import DashboardLayout from './layouts/DashboardLayout';
 import DocumentPage from './pages/documents/DocumentPage';
+import { Toaster } from 'sonner';
 
 function App() {
   return (
+  <>
+   <Toaster
+        // position="top-right"
+        // richColors
+        closeButton
+        duration={4000}
+      />
     <BrowserRouter>
       <AuthProvider>
         <Routes>
@@ -49,7 +57,6 @@ function App() {
             }
           />
           
-          {/* <Route path="/document/:documentId/permissions/"/> */}
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           {/* 404 catch-all */}
@@ -57,6 +64,7 @@ function App() {
         </Routes>
       </AuthProvider>
     </BrowserRouter>
+    </>
   );
 }
 
