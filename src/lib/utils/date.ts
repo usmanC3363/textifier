@@ -1,8 +1,10 @@
 import { Timestamp } from 'firebase/firestore';
 
 export function formatDistanceToNow(
-  date: Date | string | number | Timestamp
+  date: Date | string | number | Timestamp | null | undefined
 ): string {
+  if (!date) return 'unknown';
+
   const now = new Date();
 
   const then =
@@ -11,6 +13,8 @@ export function formatDistanceToNow(
       : typeof date === 'string' || typeof date === 'number'
         ? new Date(date)
         : date;
+
+  if (isNaN(then.getTime())) return 'unknown';
 
   const seconds = Math.floor((now.getTime() - then.getTime()) / 1000);
 

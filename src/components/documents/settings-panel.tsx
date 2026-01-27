@@ -3,6 +3,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
@@ -13,25 +14,60 @@ import { useDocumentPermissions } from '@/features/documents/hooks/useDocumentPe
 import  { useDocument } from '@/features/documents/hooks/useDocuments';
 import { useDocumentContext } from '@/features/documents/context/useDocumentContext';
 import { useDocumentAccess } from '@/features/documents/hooks/useDocumentAccess';
+import { activatePermission } from "@/features/documents/services/activatePermssion";
+import { useAuth } from '@/providers/AuthProvider';
+import { useEffect } from 'react';
+
 
 export function PermissionsSheet({
-  open,
+  open, 
   onOpenChange,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const { user } = useAuth();
   const { documentId } = useDocumentContext();
   const {document}  = useDocument(documentId)
-  const { canEdit, isOwner } = useDocumentAccess(document);
+  const { canEdit, isOwner } = useDocumentAccess(documentId);
 
   const { permissions, loading } = useDocumentPermissions(documentId);
+  // useEffect(() => {
+  //   if (!user || !documentId || permissions.length === 0) return;
+  
+  //   const myPendingPermission = permissions.find(
+  //     (p) => p.userId === user.uid && p.isPending
+  //   );
+  
+  //   if (!myPendingPermission) return;
+  
+  //   activatePermission({
+  //     documentId,
+  //     permissionId: myPendingPermission.id,
+  //   });
+  // }, [permissions, user, documentId]);
+  useEffect(() => {
+    if (!permissions || !user) return;
+  
+    const myPendingPermission = permissions.find(
+      (p) => p.isPending && p.email === user.email
+    );
+  
+    if (myPendingPermission) {
+      activatePermission({
+        documentId,
+        permissionId: myPendingPermission.id,
+      });
+    }
+  }, [permissions, user, documentId]);
+  
   
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md">
         <SheetHeader>
           <SheetTitle>Share & permissions</SheetTitle>
+          <SheetDescription/>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
