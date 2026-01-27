@@ -13,8 +13,8 @@ export interface Document {
   title: string;
   content: string;
   ownerId: string;
-  createdAt: Timestamp | Date;
-  updatedAt: Timestamp | Date;
+  createdAt: Timestamp | Date | null;
+  updatedAt: Timestamp | Date | null;
   lastEditedBy: string | null;
   version: number;
   isArchived: boolean;

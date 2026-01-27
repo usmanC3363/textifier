@@ -35,3 +35,41 @@ export function formatDistanceToNow(
   const years = Math.floor(months / 12);
   return `${years} year${years !== 1 ? 's' : ''} ago`;
 }
+
+
+/**
+ * Convert Firestore Timestamp or Date to JavaScript Date
+ */
+export function toDate(timestamp: Timestamp | Date | null | undefined): Date {
+  if (!timestamp) {
+    return new Date(); // Return current date if null/undefined
+  }
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+  return timestamp.toDate();
+}
+
+/**
+ * Format date for display
+ */
+export function formatDate(timestamp: Timestamp | Date | null , options?: Intl.DateTimeFormatOptions): string {
+  const date = toDate(timestamp);
+  return date.toLocaleDateString(undefined, options);
+}
+
+/**
+ * Format date and time for display
+ */
+export function formatDateTime(timestamp: Timestamp | Date | null , options?: Intl.DateTimeFormatOptions): string {
+  const date = toDate(timestamp);
+  return date.toLocaleString(undefined, options);
+}
+
+/**
+ * Get relative time string (e.g., "2 hours ago")
+ */
+export function getRelativeTime(timestamp: Timestamp | Date | null | undefined): string {
+  const date = toDate(timestamp);
+  return formatDistanceToNow(date);
+}

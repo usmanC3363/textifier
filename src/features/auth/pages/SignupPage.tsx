@@ -177,7 +177,7 @@ export default function SignUpPage() {
         <div className="flex w-full justify-center">
           <p>
             Already have an account?{' '}
-            <span className="text-blue-500 underline">Login</span>{' '}
+            <a href='/login' className="text-blue-500 underline">Login</a>
           </p>
         </div>
       </div>
