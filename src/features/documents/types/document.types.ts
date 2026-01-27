@@ -20,7 +20,9 @@ export interface Document {
   isArchived: boolean;
   wordCount?: number;
   characterCount?: number;
+  access?: Record<string, DocumentRole>; // ADD THIS LINE - email to role mapping
 }
+
 
 /**
  * Document with user's role information

@@ -4,19 +4,22 @@ import {
   where,
   orderBy,
   limit,
-  getDoc,
   doc,
   onSnapshot,
   QuerySnapshot,
   type DocumentData,
   collectionGroup,
+  type Unsubscribe,
+  getDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type {
   Document,
   DocumentWithRole,
   DocumentPermission,
+  DocumentRole,
 } from '@/features/documents/types/document.types';
+import { emailToKey } from '@/features/documents/services/inviteCollaborator';
 
 /**
  * Convert Firestore document to Document type
@@ -180,105 +183,175 @@ export function subscribeToSharedDocuments(
  * Combines owned and shared documents
  * Real-time updates via Firestore snapshots
  */
-export function subscribeToUserDocuments(
-  userId: string,
-  callback: (documents: DocumentWithRole[]) => void,
-  options?: { includeArchived?: boolean; limitCount?: number }
-): () => void {
-  const allDocuments = new Map<string, DocumentWithRole>();
-  let unsubscribeOwned: (() => void) | null = null;
-  let unsubscribeShared: (() => void) | null = null;
 
-  const updateCallback = () => {
-    callback(Array.from(allDocuments.values()));
-  };
 
-  // Subscribe to owned documents
-  unsubscribeOwned = subscribeToOwnedDocuments(
-    userId,
-    (ownedDocs) => {
-      // Remove old owned documents
-      Array.from(allDocuments.keys()).forEach((id) => {
-        if (allDocuments.get(id)?.isOwner) {
-          allDocuments.delete(id);
-        }
-      });
 
-      // Add owned documents with owner role
-      ownedDocs.forEach((doc) => {
-        allDocuments.set(doc.id, {
-          ...doc,
-          userRole: 'owner',
-          isOwner: true,
-        });
-      });
-
-      updateCallback();
-    },
-    options
-  );
-
-  // Subscribe to shared documents
-  unsubscribeShared = subscribeToSharedDocuments(
-    userId,
-    (sharedDocs) => {
-      // Remove old shared documents (but keep owned ones)
-      Array.from(allDocuments.keys()).forEach((id) => {
-        if (!allDocuments.get(id)?.isOwner) {
-          allDocuments.delete(id);
-        }
-      });
-
-      // Add shared documents
-      sharedDocs.forEach((doc) => {
-        // Don't overwrite owned documents
-        if (!allDocuments.has(doc.id)) {
-          allDocuments.set(doc.id, doc);
-        }
-      });
-
-      updateCallback();
-    },
-    options
-  );
-
-  // Return cleanup function
-  return () => {
-    if (unsubscribeOwned) unsubscribeOwned();
-    if (unsubscribeShared) unsubscribeShared();
-  };
+interface SubscribeOptions {
+  includeArchived?: boolean;
 }
 
 /**
- * Get a single document by ID
- * Real-time snapshot listener
+ * Subscribe to all documents user has access to
+ * This includes: documents owned by user AND documents shared via email
  */
-// ✅ With error handling
+export function subscribeToUserDocuments(
+  userId: string,
+  callback: (documents: DocumentWithRole[]) => void,
+  options: SubscribeOptions = {},
+  userEmail?: string
+): Unsubscribe {
+  const { includeArchived = false } = options;
+
+  console.log('subscribeToUserDocuments:', { userId, userEmail, includeArchived });
+
+  const allDocsQuery = query(
+    collection(db, 'documents'),
+    orderBy('updatedAt', 'desc')
+  );
+
+  return onSnapshot(
+    allDocsQuery,
+    (snapshot) => {
+      const documents: DocumentWithRole[] = [];
+
+      snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data() as Document;
+        const docId = docSnap.id;
+
+        const isOwner = data.ownerId === userId;
+        
+        // Convert email to safe key for lookup
+        const normalizedEmail = userEmail?.toLowerCase().trim();
+        const emailKey = normalizedEmail ? emailToKey(normalizedEmail) : null;
+        const hasEmailAccess = emailKey && 
+          data.access && 
+          typeof data.access === 'object' &&
+          emailKey in data.access;
+
+        console.log('Document check:', {
+          docId,
+          title: data.title,
+          isOwner,
+          hasEmailAccess,
+          normalizedEmail,
+          emailKey,
+          accessKeys: data.access ? Object.keys(data.access) : []
+        });
+
+        if (!isOwner && !hasEmailAccess) {
+          return;
+        }
+
+        if (!includeArchived && data.isArchived) {
+          return;
+        }
+
+        let userRole: DocumentRole;
+        if (isOwner) {
+          userRole = 'owner';
+        } else if (hasEmailAccess && emailKey) {
+          userRole = data.access![emailKey] as DocumentRole;
+        } else {
+          return;
+        }
+
+        documents.push({
+          ...data,
+          id: docId,
+          userRole,
+          isOwner,
+        });
+      });
+
+      console.log('subscribeToUserDocuments: found documents', documents.length, documents.map(d => ({ id: d.id, title: d.title, role: d.userRole })));
+      callback(documents);
+    },
+    (error) => {
+      console.error('Error subscribing to user documents:', error);
+      callback([]);
+    }
+  );
+}
+
 export function subscribeToDocument(
   documentId: string,
-  onUpdate: (doc: Document | null) => void,
+  callback: (document: Document | null) => void,
   onError?: (error: Error) => void
-) {
+): Unsubscribe {
   const docRef = doc(db, 'documents', documentId);
 
   return onSnapshot(
     docRef,
     (snapshot) => {
       if (snapshot.exists()) {
-        onUpdate(snapshot.data() as Document);
+        const data = snapshot.data();
+        callback({
+          ...data,
+          id: snapshot.id,
+        } as Document);
       } else {
-        onUpdate(null);
+        callback(null);
       }
     },
     (error) => {
-      console.error('Error fetching document:', error);
+      console.error('Error subscribing to document:', error);
       if (onError) {
         onError(error);
+      } else {
+        callback(null);
       }
     }
   );
 }
 
+export async function getDocument(
+  documentId: string
+): Promise<Document | null> {
+  try {
+    const docRef = doc(db, 'documents', documentId);
+    const snapshot = await getDoc(docRef);
+
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      return {
+        ...data,
+        id: snapshot.id,
+      } as Document;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting document:', error);
+    return null;
+  }
+}
+
+export async function getUserDocumentRole(
+  documentId: string,
+  userId: string,
+  userEmail: string
+): Promise<DocumentRole | null> {
+  try {
+    const document = await getDocument(documentId);
+    if (!document) return null;
+
+    if (document.ownerId === userId) {
+      return 'owner';
+    }
+
+    const normalizedEmail = userEmail.toLowerCase().trim();
+    const emailKey = emailToKey(normalizedEmail);
+    
+    if (document.access && emailKey in document.access) {
+      return document.access[emailKey];
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting user document role:', error);
+    return null;
+  }
+}
 /**
  * Get document permissions
  * Real-time snapshot listener
@@ -313,3 +386,4 @@ export function subscribeToDocumentPermissions(
     }
   );
 }
+

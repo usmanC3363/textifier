@@ -24,7 +24,7 @@ export function useDocuments(filter?: DocumentFilter) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !user.email) {
       setDocuments([]);
       setLoading(false);
       return;
@@ -59,19 +59,21 @@ export function useDocuments(filter?: DocumentFilter) {
           );
         }
 
+        console.log('useDocuments: filtered documents', filteredDocs.length);
         setDocuments(filteredDocs);
         setLoading(false);
       },
       {
         includeArchived: filter?.isArchived === true,
-      }
+      },
+      user.email // Pass user email for access checking
     );
 
     // Cleanup subscription on unmount
     return () => {
       unsubscribe();
     };
-  }, [user, filter?.isArchived, filter?.role, filter?.searchQuery]);
+  }, [user?.uid, user?.email, filter?.isArchived, filter?.role, filter?.searchQuery]);
 
   return { documents, loading, error };
 }
@@ -81,14 +83,13 @@ export function useDocuments(filter?: DocumentFilter) {
  * Provides real-time updates
  */
 export function useDocument(documentId: string | null) {
-  const { user } = useAuth(); // ✅ Add this
+  const { user } = useAuth();
   const [document, setDocument] = useState<Document | null>(null);
   const [loading, setLoading] = useState<boolean>(!!documentId);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!documentId || !user) {
-      // ✅ Check user
       setDocument(null);
       setLoading(false);
       return;
@@ -104,14 +105,13 @@ export function useDocument(documentId: string | null) {
         setLoading(false);
       },
       (err) => {
-        // ✅ Add error callback
         setError(err);
         setLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [documentId, user]); // ✅ Add user to dependencies
+  }, [documentId, user?.uid]);
 
   if (!documentId || !user) {
     return { document: null, loading: false, error: null };
