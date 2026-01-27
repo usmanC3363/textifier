@@ -8,10 +8,8 @@ export default function DocumentPage() {
   const { documentId: rawDocumentId } = useParams<{
     documentId: string;
   }>();
-
-  // Normalize undefined → null
+  
   const documentId = rawDocumentId ?? null;
-
   const { document, loading } = useDocument(documentId);
 
   if (loading) return <Loader2 className="animate-spin" />;

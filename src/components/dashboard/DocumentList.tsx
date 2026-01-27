@@ -1,6 +1,6 @@
 'use client';
 
-import { DocumentWithRole } from '@/features/documents/types/document.types';
+import { type DocumentWithRole } from '@/features/documents/types/document.types';
 import { DocumentCard } from './DocumentCard';
 
 interface DocumentListProps {
