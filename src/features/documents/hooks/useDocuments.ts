@@ -130,7 +130,7 @@ export function useDocumentMutations() {
 
   const createDocument = useCallback(
     async (input: CreateDocumentInput): Promise<string | null> => {
-      if (!user) {
+      if (!user || !user.email) {
         throw new Error('User must be authenticated to create documents');
       }
 
@@ -139,7 +139,8 @@ export function useDocumentMutations() {
         setError(null);
         const documentId = await documentMutations.createDocument(
           user.uid,
-          input
+          input,
+          user.email
         );
         return documentId;
       } catch (err) {

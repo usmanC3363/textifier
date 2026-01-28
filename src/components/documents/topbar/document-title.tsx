@@ -1,20 +1,28 @@
 import { Input } from '@/components/ui/input';
-import { useDocumentMutations } from '@/features/documents/hooks/useDocuments';
-import { useState } from 'react';
+import { useDocument, useDocumentMutations } from '@/features/documents/hooks/useDocuments';
+import {  useEffect, useState } from 'react';
 import { useDocumentContext } from '@/features/documents/context/useDocumentContext';
 
 export function DocumentTitle() {
   const { documentId } = useDocumentContext();
-
+  const { document } = useDocument(documentId); 
   const { updateDocument } = useDocumentMutations();
-  const [title, setTitle] = useState(document.title);
+  const [title, setTitle] = useState(document?.title || "");
 
-  const handleBlur = () => {
-    if (title !== document.title) {
-      updateDocument(documentId, { title });
-    }
-  };
-
+    // ✅ Update local state when document loads/changes
+    useEffect(() => {
+      if (document?.title) {
+        setTitle(document.title);
+      }
+    }, [document?.title]);
+  
+    const handleBlur = () => {
+      if (document && title !== document.title && title.trim()) {
+        updateDocument(documentId, { title: title.trim() });
+      }
+    };
+  
+  if (!document) return null;
   return (
     <Input
       value={title}
