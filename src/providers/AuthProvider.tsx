@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import React, {
   createContext,
@@ -21,6 +21,25 @@ import { mapFirebaseUser } from '@/features/auth/types/auth.types';
 import { resolvePendingInvites } from '@/features/auth/hooks/resolve-pending-invites';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+import { useNavigate } from 'react-router-dom';
+import { getAndClearIntendedRedirect } from '@/lib/utils/redirect-utils';
+
+// Inside your AuthProvider or after successful login/signup:
+
+export function usePostAuthRedirect() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check for intended redirect after user logs in
+    const intendedPath = getAndClearIntendedRedirect();
+    
+    if (intendedPath) {
+      // Redirect to intended path
+      navigate(intendedPath);
+    }
+  }, [navigate]);
+}
 
 interface AuthProviderProps {
   children: React.ReactNode;

@@ -6,6 +6,9 @@ import {
   serverTimestamp,
   writeBatch,
   getDoc,
+  where,
+  getDocs,
+  query,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type {
@@ -82,13 +85,35 @@ export async function updateDocument(
 /**
  * Delete a document and all its subcollections
  */
+// export async function deleteDocument(documentId: string): Promise<void> {
+//   try {
+//     const batch = writeBatch(db);
+    
+//     // Delete main document
+//     const docRef = doc(db, 'documents', documentId);
+//     batch.delete(docRef);
+
+//     await batch.commit();
+//   } catch (error) {
+//     console.error('Error deleting document:', error);
+//     throw error;
+//   }
+// }
+
 export async function deleteDocument(documentId: string): Promise<void> {
   try {
     const batch = writeBatch(db);
     
-    // Delete main document
-    const docRef = doc(db, 'documents', documentId);
-    batch.delete(docRef);
+    // Delete document
+    batch.delete(doc(db, 'documents', documentId));
+
+    // Find and delete invites
+    const invitesQuery = query(
+      collection(db, 'invites'),
+      where('documentId', '==', documentId)
+    );
+    const invitesSnapshot = await getDocs(invitesQuery);
+    invitesSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
 
     await batch.commit();
   } catch (error) {
@@ -96,7 +121,6 @@ export async function deleteDocument(documentId: string): Promise<void> {
     throw error;
   }
 }
-
 /**
  * Archive/unarchive a document
  */

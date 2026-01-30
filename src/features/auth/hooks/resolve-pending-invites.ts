@@ -4,7 +4,6 @@ import {
   where,
   getDocs,
   updateDoc,
-  doc,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -16,28 +15,34 @@ export async function resolvePendingInvites({
   uid: string;
   email: string;
 }) {
+  const normalizedEmail = email.toLowerCase().trim();
+  
   const q = query(
     collection(db, 'invites'),
-    where('email', '==', email),
+    where('email', '==', normalizedEmail),
     where('isPending', '==', true)
   );
 
   const snap = await getDocs(q);
 
+  console.log(`Found ${snap.size} pending invites for ${normalizedEmail}`);
+
   for (const invite of snap.docs) {
-    const { documentId, role } = invite.data();
+    const inviteData = invite.data();
+    
+    console.log(`Activating invite ${invite.id} for document ${inviteData.documentId}`);
 
-    // 🔁 swap email-key to uid-key
-    await updateDoc(doc(db, 'documents', documentId), {
-      [`access.${uid}`]: role,
-      [`access.${email}`]: null,
-    });
-
-    // mark invite resolved
+    // ✅ ONLY update the invite record
+    // ❌ DO NOT modify document.access - it's already set!
     await updateDoc(invite.ref, {
       isPending: false,
       userId: uid,
-      grantedAt: serverTimestamp(), // 🔑 REQUIRED
+      grantedAt: serverTimestamp(),
     });
+
+    console.log(`✅ Invite ${invite.id} activated`);
   }
+
+  console.log('✅ All pending invites resolved');
+  
 }

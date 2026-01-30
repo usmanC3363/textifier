@@ -1,18 +1,7 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
-/**
- * Login Page Example
- *
- * Demonstrates:
- * - Email/Password sign in
- * - Google OAuth sign in
- * - Error handling
- * - Redirect after successful login
- */
 export default function LoginPage() {
   const { signIn, signInWithGoogle, loading, error } = useAuth();
   const navigate = useNavigate();
@@ -20,13 +9,35 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Check for saved redirect on mount
+  useEffect(() => {
+    const savedRedirect = sessionStorage.getItem('redirectAfterLogin');
+    if (savedRedirect) {
+      console.log('Found saved redirect:', savedRedirect);
+    }
+  }, []);
+
+  const handleSuccessfulLogin = () => {
+    // Check if there's a saved redirect path
+    const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+    
+    if (redirectPath) {
+      console.log('Redirecting to saved path:', redirectPath);
+      sessionStorage.removeItem('redirectAfterLogin'); // Clear it
+      navigate(redirectPath, { replace: true });
+    } else {
+      console.log('No saved redirect, going to dashboard');
+      navigate('/dashboard', { replace: true });
+    }
+  };
+
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
 
     try {
       await signIn({ email, password });
-      navigate('/dashboard');
+      handleSuccessfulLogin();
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Sign in failed');
     }
@@ -37,7 +48,7 @@ export default function LoginPage() {
 
     try {
       await signInWithGoogle();
-      navigate('/dashboard');
+      handleSuccessfulLogin();
     } catch (err) {
       setLocalError(
         err instanceof Error ? err.message : 'Google sign in failed'
@@ -153,10 +164,13 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
+        
         <div className="flex w-full justify-center">
-          <p>
-            Don't have an account?
-            <a href='/login' className="text-blue-500 underline">Create Account</a>
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <a href='/signup' className="text-indigo-600 hover:text-indigo-500 font-medium">
+              Create Account
+            </a>
           </p>
         </div>
       </div>
