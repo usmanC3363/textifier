@@ -6,7 +6,6 @@ import { DocTopBar } from './topbar/doc-topbar';
 import { useDocumentContext } from '@/features/documents/context/useDocumentContext';
 import { useDocument } from '@/features/documents/hooks/useDocuments';
 import { useDocumentAccess } from '@/features/documents/hooks/useDocumentAccess';
-import { useDocumentPermissions } from '@/features/documents/hooks/useDocumentPermissions';
 import { useAuth } from '@/providers/AuthProvider';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Lock, Users } from 'lucide-react';
@@ -18,27 +17,60 @@ export default function DocPage() {
   const { documentId } = useDocumentContext();
   const { document, loading: docLoading } = useDocument(documentId);
   const { role, isOwner, canEdit, canRead, loading: accessLoading } = useDocumentAccess(documentId);
-  const { permissions, loading: permsLoading } = useDocumentPermissions(documentId);
+  // const { permissions, loading: permsLoading } = useDocumentPermissions(documentId);
 
   // Calculate collaborator stats
-  const collaboratorStats = useMemo(() => {
-    if (!permissions || !document) return null;
+  // const collaboratorStats = useMemo(() => {
+  //   if (!permissions || !document) return null;
 
-    const activePermissions = permissions.filter(p => !p.isPending);
-    const editors = activePermissions.filter(p => p.role === 'editor');
-    const viewers = activePermissions.filter(p => p.role === 'viewer');
+  //   const activePermissions = permissions.filter(p => !p.isPending);
+  //   const editors = activePermissions.filter(p => p.role === 'editor');
+  //   const viewers = activePermissions.filter(p => p.role === 'viewer');
     
-    // Include owner
-    const totalCollaborators = activePermissions.length + 1; // +1 for owner
+  //   // Include owner
+  //   const totalCollaborators = activePermissions.length + 1; // +1 for owner
 
+  //   return {
+  //     total: totalCollaborators,
+  //     editors: editors.length + 1, // +1 for owner who is also an editor
+  //     viewers: viewers.length,
+  //     activePermissions,
+  //   };
+  // }, [permissions, document]);
+
+  const collaboratorStats = useMemo(() => {
+    if (!document) return null;
+  
+    const accessMap = document.access || {};
+    const accessEmails = Object.keys(accessMap);
+    
+    // Count editors and viewers from access map
+    let editors = 1; // Owner is always an editor
+    let viewers = 0;
+    
+    accessEmails.forEach(email => {
+      if (accessMap[email] === 'editor') {
+        editors++;
+      } else if (accessMap[email] === 'viewer') {
+        viewers++;
+      }
+    });
+  
+    const totalCollaborators = 1 + accessEmails.length; // owner + shared users
+  
+    // Create array of collaborators for avatars
+    const collaborators = accessEmails.map(email => ({
+      email,
+      role: accessMap[email],
+    }));
+  
     return {
       total: totalCollaborators,
-      editors: editors.length + 1, // +1 for owner who is also an editor
-      viewers: viewers.length,
-      activePermissions,
+      editors,
+      viewers,
+      collaborators,
     };
-  }, [permissions, document]);
-
+  }, [document]);
   // Get user's role display
   const roleDisplay = useMemo(() => {
     if (isOwner) return { text: 'Owner', variant: 'default' as const, icon: Lock };
@@ -125,29 +157,34 @@ export default function DocPage() {
       {/* Collaborators Avatars */}
       <div className="flex items-center gap-2 px-4 py-2 border-b bg-background/50">
         {/* Owner Avatar */}
-        <Avatar className="h-7 w-7 ring-2 ring-primary ring-offset-1">
+        <Avatar className="h-7 w-7 ring-1 ring-primary bg-background/50 p-2 group relative">
           <AvatarFallback className="text-xs">
-            {document.ownerId === user?.uid ? 'You' : 'O'}
+            {document.ownerId === user?.uid ? 'You' : (
+              document.ownerEmail 
+                ? document.ownerEmail.charAt(0).toUpperCase()
+                : "O"
+            )}
           </AvatarFallback>
+          <span className='absolute left-0 bottom-0 text-xl'>{document.ownerEmail }</span>
         </Avatar>
 
-        {/* Active Collaborators */}
-        {collaboratorStats?.activePermissions.slice(0, 5).map((perm, idx) => (
+        {/* Active Collaborators from access map */}
+        {collaboratorStats?.collaborators.slice(0, 5).map((collab, idx) => (
           <Avatar 
-            key={perm.id} 
-            className={`h-7 w-7 ${perm.email === user?.email ? 'ring-2 ring-primary ring-offset-1' : ''}`}
+            key={idx}
+            className={`h-7 w-7 ${collab.email === user?.email ? 'ring-1 ring-primary ring-offset-1' : ''}`}
           >
             <AvatarFallback className="text-xs">
-              {perm.email === user?.email ? 'You' : perm.email.charAt(0).toUpperCase()}
+              {collab.email === user?.email ? 'You' : collab.email.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
         ))}
 
         {/* Show +N if more collaborators */}
-        {collaboratorStats && collaboratorStats.activePermissions.length > 5 && (
+        {collaboratorStats && collaboratorStats.collaborators.length > 5 && (
           <Avatar className="h-7 w-7 bg-muted">
             <AvatarFallback className="text-xs">
-              +{collaboratorStats.activePermissions.length - 5}
+              +{collaboratorStats.collaborators.length - 5}
             </AvatarFallback>
           </Avatar>
         )}

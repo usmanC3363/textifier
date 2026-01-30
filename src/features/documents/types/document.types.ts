@@ -13,6 +13,7 @@ export interface Document {
   title: string;
   content: string;
   ownerId: string;
+  ownerEmail?: string; 
   createdAt: Timestamp | Date | null;
   updatedAt: Timestamp | Date | null;
   lastEditedBy: string | null;
@@ -20,7 +21,7 @@ export interface Document {
   isArchived: boolean;
   wordCount?: number;
   characterCount?: number;
-  access?: Record<string, DocumentRole>; // ADD THIS LINE - email to role mapping
+  access?: Record<string, DocumentRole>; // email to role mapping
 }
 
 

@@ -21,6 +21,7 @@ import { useState } from 'react';
 import { Loader2, Trash2, Crown, Edit, Eye, Clock, Check, XIcon } from 'lucide-react';
 import { toast } from 'sonner'; // Assuming you're using sonner for toasts
 import { formatDate } from '@/lib/utils/date';
+import { AccessRow } from './settings/access-row';
 
 export function PermissionsSheet({
   open,
@@ -100,14 +101,14 @@ export function PermissionsSheet({
     }
   };
 
-  // Get owner info
-  const ownerInfo = document
-    ? {
-        id: document.ownerId,
-        email: 'Owner', // You could fetch this from users collection if needed
-        isYou: document.ownerId === user?.uid,
-      }
-    : null;
+    // Get owner info
+    const ownerInfo = document
+      ? {
+          id: document.ownerId,
+          email: 'Owner', // You could fetch this from users collection if needed
+          isYou: document.ownerId === user?.uid,
+        }
+      : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -248,10 +249,6 @@ export function PermissionsSheet({
                 <input type="checkbox" disabled />
               </div>
             </div>
-
-            <p className="text-xs text-muted-foreground italic">
-              Additional settings coming soon
-            </p>
           </div>
 
           <Separator />
@@ -282,65 +279,3 @@ export function PermissionsSheet({
   );
 }
 
-function AccessRow({
-  name,
-  role,
-  roleIcon,
-  isPending,
-  canRemove,
-  onRemove,
-  isRemoving,
-}: {
-  name: string;
-  role: string;
-  roleIcon?: React.ReactNode;
-  isPending: boolean;
-  canRemove?: boolean;
-  onRemove?: () => void;
-  isRemoving?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2 py-1.5">
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <Avatar className="h-7 w-7 flex-shrink-0">
-          <AvatarFallback className="text-xs">
-            {name.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm truncate">{name}</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {isPending ? (
-          <Badge variant="outline" className="gap-1">
-            <Clock className="h-3 w-3" />
-            Pending
-          </Badge>
-        ) : (
-          <Badge variant="secondary" className="gap-1">
-            {roleIcon}
-            {role}
-          </Badge>
-        )}
-
-        {canRemove && onRemove && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={onRemove}
-            disabled={isRemoving}
-          >
-            {isRemoving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Trash2 className="h-4 w-4 text-destructive" />
-            )}
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}

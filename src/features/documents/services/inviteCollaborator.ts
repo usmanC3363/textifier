@@ -60,7 +60,7 @@ export async function inviteCollaborator({
       updatedAt: serverTimestamp(),
     });
 
-    console.log('inviteCollaborator: access granted with key', emailKey);
+    // console.log('inviteCollaborator: access granted with key', emailKey);
 
     // Create invite record with the ORIGINAL email
     const inviteId = crypto.randomUUID();
@@ -74,7 +74,7 @@ export async function inviteCollaborator({
       userId: null,
     });
 
-    console.log('inviteCollaborator: invite created', inviteId);
+    // console.log('inviteCollaborator: invite created', inviteId);
     return inviteId;
   } catch (error) {
     console.error('Error inviting collaborator:', error);
@@ -111,7 +111,7 @@ export async function removeCollaborator({
       updatedAt: serverTimestamp(),
     });
     
-    console.log('removeCollaborator: access removed');
+    // console.log('removeCollaborator: access removed');
   } catch (error) {
     console.error('Error removing collaborator:', error);
     throw error;
