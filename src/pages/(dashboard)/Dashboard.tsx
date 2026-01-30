@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ import {
 import { DocumentList } from '@/components/dashboard/DocumentList';
 import { CreateDocumentDialog } from '@/components/dashboard/CreateDocumentDialog';
 import { Button } from '@/components/ui/button';
+// import { CleanupAllButton } from '@/lib/utils/cleanupDocumentAccess';
 
 /**
  * Dashboard Page - Main document management interface
@@ -24,7 +25,8 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   return (
-    <AuthGuard onRedirect={(path) => navigate(path)}>
+    <AuthGuard requireAuth>
+    {/* <AuthGuard onRedirect={(path) => navigate(path)}> */}
       <DashboardContent />
     </AuthGuard>
   );
@@ -121,18 +123,19 @@ function DashboardContent() {
               {filteredDocuments.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <button
+          <Button
             onClick={() => setIsCreateDialogOpen(true)}
             className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white shadow-md hover:bg-blue-700"
             disabled={mutationLoading}
           >
             <span className="text-xl">+</span> &nbsp;New Document
-          </button>
+          </Button>
+          {/* <CleanupAllButton /> */}
         </div>
 
-        {/* Filters */}
+        {/* Filters Tabs */}
         <div className="mb-6 flex gap-2">
-          <button
+          <Button
             onClick={() => setFilter('all')}
             className={`rounded-md px-4 py-2 font-medium ${
               filter === 'all'
@@ -141,8 +144,8 @@ function DashboardContent() {
             }`}
           >
             All
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setFilter('owned')}
             className={`rounded-md px-4 py-2 font-medium ${
               filter === 'owned'
@@ -151,8 +154,8 @@ function DashboardContent() {
             }`}
           >
             Owned
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setFilter('shared')}
             className={`rounded-md px-4 py-2 font-medium ${
               filter === 'shared'
@@ -161,8 +164,8 @@ function DashboardContent() {
             }`}
           >
             Shared
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setFilter('archived')}
             className={`rounded-md px-4 py-2 font-medium ${
               filter === 'archived'
@@ -171,7 +174,7 @@ function DashboardContent() {
             }`}
           >
             Archived
-          </button>
+          </Button>
         </div>
 
         {/* Document List */}

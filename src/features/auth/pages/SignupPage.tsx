@@ -1,18 +1,7 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
-/**
- * Sign Up Page Example
- *
- * Demonstrates:
- * - Email/Password sign up
- * - Google OAuth sign up
- * - Error handling
- * - Redirect after successful sign up
- */
 export default function SignUpPage() {
   const { signUp, signInWithGoogle, loading, error } = useAuth();
   const navigate = useNavigate();
@@ -21,13 +10,41 @@ export default function SignUpPage() {
   const [displayName, setDisplayName] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Check for saved redirect on mount
+  useEffect(() => {
+    const savedRedirect = sessionStorage.getItem('redirectAfterLogin');
+    if (savedRedirect) {
+      console.log('Found saved redirect for signup:', savedRedirect);
+    }
+  }, []);
+
+  const handleSuccessfulSignup = () => {
+    // Check if there's a saved redirect path
+    const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+    
+    if (redirectPath) {
+      console.log('Redirecting to saved path:', redirectPath);
+      sessionStorage.removeItem('redirectAfterLogin'); // Clear it
+      navigate(redirectPath, { replace: true });
+    } else {
+      console.log('No saved redirect, going to dashboard');
+      navigate('/dashboard', { replace: true });
+    }
+  };
+
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
 
+    // Validate password length
+    if (password.length < 6) {
+      setLocalError('Password must be at least 6 characters');
+      return;
+    }
+
     try {
       await signUp({ email, password, displayName });
-      navigate('/dashboard');
+      handleSuccessfulSignup();
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Sign up failed');
     }
@@ -38,7 +55,7 @@ export default function SignUpPage() {
 
     try {
       await signInWithGoogle();
-      navigate('/dashboard');
+      handleSuccessfulSignup();
     } catch (err) {
       setLocalError(
         err instanceof Error ? err.message : 'Google sign up failed'
@@ -174,10 +191,13 @@ export default function SignUpPage() {
             </button>
           </div>
         </form>
+        
         <div className="flex w-full justify-center">
-          <p>
+          <p className="text-sm text-gray-600">
             Already have an account?{' '}
-            <a href='/login' className="text-blue-500 underline">Login</a>
+            <a href='/login' className="text-indigo-600 hover:text-indigo-500 font-medium">
+              Sign in
+            </a>
           </p>
         </div>
       </div>

@@ -1,4 +1,4 @@
-'use client';
+ 
 import { useState, useMemo } from 'react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { PermissionsSheet } from './settings-panel';
@@ -165,27 +165,29 @@ export default function DocPage() {
                 : "O"
             )}
           </AvatarFallback>
-          <span className='absolute left-0 bottom-0 text-xl'>{document.ownerEmail }</span>
+          {/* <span className='absolute z-[1000] opacity-0 overflow-y-visible group-hover:opacity-100 group-hover:-translate-y-1 duration-300 ease-linear text-sm'>{document.ownerEmail}</span> */}
         </Avatar>
 
         {/* Active Collaborators from access map */}
         {collaboratorStats?.collaborators.slice(0, 5).map((collab, idx) => (
           <Avatar 
             key={idx}
-            className={`h-7 w-7 ${collab.email === user?.email ? 'ring-1 ring-primary ring-offset-1' : ''}`}
+            className={`h-7 w-7 group ${collab.email === user?.email ? 'ring-1 ring-primary ring-offset-1' : ''}`}
           >
             <AvatarFallback className="text-xs">
               {collab.email === user?.email ? 'You' : collab.email.charAt(0).toUpperCase()}
             </AvatarFallback>
+            {/* <span className='absolute z-[1000] opacity-0 overflow-y-visible group-hover:opacity-100 group-hover:-translate-y-1 duration-300 ease-linear text-sm'>{document.ownerEmail}</span> */}
           </Avatar>
         ))}
 
         {/* Show +N if more collaborators */}
         {collaboratorStats && collaboratorStats.collaborators.length > 5 && (
-          <Avatar className="h-7 w-7 bg-muted">
+          <Avatar className="h-7 w-7 bg-muted ">
             <AvatarFallback className="text-xs">
               +{collaboratorStats.collaborators.length - 5}
             </AvatarFallback>
+            
           </Avatar>
         )}
       </div>

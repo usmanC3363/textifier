@@ -1,4 +1,4 @@
-'use client';
+ 
 
 import { type DocumentWithRole } from '@/features/documents/types/document.types';
 import { DocumentCard } from './DocumentCard';

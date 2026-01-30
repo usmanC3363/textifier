@@ -1,61 +1,41 @@
-'use client';
-
+// src/components/auth/AuthGuard.tsx
 import { useEffect } from 'react';
-import { useAuth } from '@/providers/AuthProvider';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  redirectTo?: string;
-  onRedirect?: (path: string) => void;
+  requireAuth?: boolean;
 }
 
-/**
- * AuthGuard - Protects routes by redirecting unauthenticated users
- *
- * Usage with Next.js:
- * <AuthGuard onRedirect={(path) => router.push(path)}>
- *   <ProtectedPage />
- * </AuthGuard>
- *
- * Usage with React Router:
- * <AuthGuard onRedirect={(path) => navigate(path)}>
- *   <ProtectedPage />
- * </AuthGuard>
- *
- * Or use default redirect (requires router setup):
- * <AuthGuard>
- *   <ProtectedPage />
- * </AuthGuard>
- */
-export function AuthGuard({
-  children,
-  redirectTo = '/login',
-  onRedirect,
-}: AuthGuardProps) {
+export function AuthGuard({ children, requireAuth = true }: AuthGuardProps) {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    if (!loading && !user) {
-      if (onRedirect) {
-        onRedirect(redirectTo);
-      } else {
-        // Fallback: use window.location if no redirect handler provided
-        window.location.href = redirectTo;
-      }
-    }
-  }, [user, loading, redirectTo, onRedirect]);
+    if (loading) return;
 
-  // Show loading state while checking auth
+    if (requireAuth && !user) {
+      // Store the current path (including document links) before redirecting
+      sessionStorage.setItem('redirectAfterLogin', location.pathname);
+      console.log('Saving redirect path:', location.pathname);
+      navigate('/login', { replace: true });
+    }
+  }, [user, loading, requireAuth, navigate, location.pathname]);
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-gray-900"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
       </div>
     );
   }
 
-  // Don't render children if user is not authenticated
-  if (!user) {
+  if (requireAuth && !user) {
     return null;
   }
 

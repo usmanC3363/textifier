@@ -9,6 +9,7 @@ import DashboardPage from '@/pages/(dashboard)/Dashboard';
 import DashboardLayout from './layouts/DashboardLayout';
 import DocumentPage from './pages/documents/DocumentPage';
 import { Toaster } from 'sonner';
+import { AuthGuard } from './components/auth/AuthGuard';
 
 function App() {
   return (
@@ -16,44 +17,53 @@ function App() {
    <Toaster
         // position="top-right"
         // richColors
-        closeButton
-        duration={4000}
+        // closeButton
+        duration={1800}
       />
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route
-            path="/login"
-            element={
-              <DashboardLayout>
-                <LoginPage />
-              </DashboardLayout>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <DashboardLayout>
-                <SignUpPage />
-              </DashboardLayout>
-            }
-          />
+        <Route
+              path="/login"
+              element={
+                <AuthGuard requireAuth={false}>
+                  <DashboardLayout>
+                    <LoginPage />
+                  </DashboardLayout>
+                </AuthGuard>
+              }
+            />
+            
+            <Route
+              path="/signup"
+              element={
+                <AuthGuard requireAuth={false}>
+                  <DashboardLayout>
+                    <SignUpPage />
+                  </DashboardLayout>
+                </AuthGuard>
+              }
+            />
 
-          <Route
-            path="/dashboard"
-            element={
-              <DashboardLayout>
-                <DashboardPage />
-              </DashboardLayout>
-            }
-          />
+            {/* Protected routes - require authentication */}
+            <Route
+              path="/dashboard"
+              element={
+                <AuthGuard requireAuth={true}>
+                  <DashboardLayout>
+                    <DashboardPage />
+                  </DashboardLayout>
+                </AuthGuard>
+              }
+            />
+
 
           <Route
             path="/document/:documentId"
             element={
-              <DashboardLayout>
+              <AuthGuard requireAuth={true}>
                 <DocumentPage />
-              </DashboardLayout>
+              </AuthGuard>
             }
           />
           
