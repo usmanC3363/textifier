@@ -14,6 +14,7 @@ export interface Document {
   content: string;
   ownerId: string;
   ownerEmail?: string; 
+  draftUpdatedAt?: Timestamp | Date | null;
   createdAt: Timestamp | Date | null;
   updatedAt: Timestamp | Date | null;
   lastEditedBy: string | null;

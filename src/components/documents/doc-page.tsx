@@ -10,6 +10,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Lock, Users } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils/date';
+import { DocumentEditor } from './doument-editor';
 
 export default function DocPage() {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
@@ -17,26 +18,7 @@ export default function DocPage() {
   const { documentId } = useDocumentContext();
   const { document, loading: docLoading } = useDocument(documentId);
   const { role, isOwner, canEdit, canRead, loading: accessLoading } = useDocumentAccess(documentId);
-  // const { permissions, loading: permsLoading } = useDocumentPermissions(documentId);
-
-  // Calculate collaborator stats
-  // const collaboratorStats = useMemo(() => {
-  //   if (!permissions || !document) return null;
-
-  //   const activePermissions = permissions.filter(p => !p.isPending);
-  //   const editors = activePermissions.filter(p => p.role === 'editor');
-  //   const viewers = activePermissions.filter(p => p.role === 'viewer');
-    
-  //   // Include owner
-  //   const totalCollaborators = activePermissions.length + 1; // +1 for owner
-
-  //   return {
-  //     total: totalCollaborators,
-  //     editors: editors.length + 1, // +1 for owner who is also an editor
-  //     viewers: viewers.length,
-  //     activePermissions,
-  //   };
-  // }, [permissions, document]);
+  
 
   const collaboratorStats = useMemo(() => {
     if (!document) return null;
@@ -215,31 +197,7 @@ export default function DocPage() {
 
       {/* Editor Area */}
       <main className="flex flex-1 justify-center px-2 py-6 sm:px-4">
-        <div 
-          className={`w-full max-w-4xl rounded-md border bg-card shadow-sm sm:p-10 p-6 transition-opacity ${
-            !canEdit ? 'opacity-75' : ''
-          }`}
-          style={{
-            minHeight: '11in', // Standard letter size height
-          }}
-        >
-          {/* Viewer-only overlay indicator */}
-          {!canEdit && (
-            <div className="mb-4 p-3 bg-muted/50 rounded-md border border-dashed flex items-center gap-2 text-sm text-muted-foreground">
-              <Eye className="h-4 w-4" />
-              <span>You're viewing this document in read-only mode</span>
-            </div>
-          )}
-
-          {/* TipTap will mount here */}
-          <div className={!canEdit ? 'pointer-events-none select-text' : ''}>
-            <p className="text-muted-foreground">
-              {canEdit 
-                ? 'Start typing your document…' 
-                : 'This document is view-only for you.'}
-            </p>
-          </div>
-        </div>
+       <DocumentEditor documentId={documentId}/>
       </main>
 
       {/* Permissions / Settings Sheet */}

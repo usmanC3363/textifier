@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { inviteCollaboratorByEmail } from '@/lib/firestore/mutations/documentMutations';
 
 export function useDocumentInvites() {
   const { user } = useAuth();
@@ -21,7 +20,7 @@ export function useDocumentInvites() {
         setLoading(true);
         setError(null);
 
-        await inviteCollaboratorByEmail(documentId, email, role, user.uid);
+        // await inviteCollaboratorByEmail(documentId, email, role, user.uid);
       } catch (err) {
         const error =
           err instanceof Error
