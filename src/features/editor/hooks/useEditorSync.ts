@@ -22,26 +22,17 @@ export function useEditorSync({
   isTypingRef
 }: UseEditorSyncOptions) {
   const isUpdatingRef = useRef(false);
-  const pendingRemoteContentRef = useRef<string | null>(null);
   const lastRemoteContentRef = useRef<string>('');
-  const lastVersionRef = useRef<number>(0); // 🔥 Track version to ignore draft-only saves
+  const lastVersionRef = useRef<number>(0);
 
   /**
    * Update editor content from remote changes
    */
   const updateEditorContent = useCallback(
     (remoteContent: string) => {
-      console.log('🟢 updateEditorContent called', {
-        hasEditor: !!editor,
-        isUpdating: isUpdatingRef.current,
-        isTyping: isTypingRef.current,
-        remoteLength: remoteContent.length,
-        lastRemoteLength: lastRemoteContentRef.current.length
-      });
-
       if (!editor) return;
       if (isUpdatingRef.current) return;
-      if (isTypingRef.current) return; // Don't update while user is typing
+      if (isTypingRef.current) return;
 
       // Check if content actually changed
       if (remoteContent === lastRemoteContentRef.current) return;
@@ -81,8 +72,6 @@ export function useEditorSync({
     [editor, isTypingRef, isReadOnly]
   );
 
-
-  
   /**
    * Subscribe to Firestore document changes
    */
@@ -101,57 +90,43 @@ export function useEditorSync({
             console.warn('Document does not exist');
             return;
           }
-      
+
           const data = snapshot.data();
           const remoteContent = data?.content;
           const remoteVersion = data?.version || 0;
-      
+
           if (!remoteContent) return;
-      
-          // 🔥 FIRST TIME LOAD - Just set refs, don't update editor
+
+          // FIRST TIME LOAD - Just set refs, don't update editor
           if (lastRemoteContentRef.current === '') {
             lastRemoteContentRef.current = remoteContent;
             lastVersionRef.current = remoteVersion;
             console.log('📝 Initial load - version:', remoteVersion);
             return;
           }
-      
-          // 🔥 SKIP if version unchanged (draft saves)
+
+          // SKIP if version unchanged (draft saves)
           if (remoteVersion === lastVersionRef.current) {
             console.log('⏭️ Version unchanged, ignoring');
             return;
           }
-      
-          // 🔥 SKIP if content is actually the same (even if version changed)
+
+          // SKIP if content is actually the same (even if version changed)
           if (remoteContent === lastRemoteContentRef.current) {
             console.log('⏭️ Content identical, just updating version tracker');
             lastVersionRef.current = remoteVersion;
             return;
           }
-      
+
           console.log('🔄 Version changed:', lastVersionRef.current, '→', remoteVersion);
           lastVersionRef.current = remoteVersion;
-      
-          // Don't interrupt user typing
+
+          // Don't interrupt user typing - update will happen when they stop
           if (isTypingRef.current) {
-            console.log('⏭️ User typing, deferring update');
-            pendingRemoteContentRef.current = remoteContent;
+            console.log('⏭️ User typing, skipping remote update');
             return;
           }
-          
-          useEffect(() => {
-            if (!editor) return;
-          
-            const interval = setInterval(() => {
-              if (!isTypingRef.current && pendingRemoteContentRef.current) {
-                updateEditorContent(pendingRemoteContentRef.current);
-                pendingRemoteContentRef.current = null;
-              }
-            }, 300);
-          
-            return () => clearInterval(interval);
-          }, [editor, updateEditorContent, isTypingRef]);
-          
+
           updateEditorContent(remoteContent);
         },
         (error) => {
