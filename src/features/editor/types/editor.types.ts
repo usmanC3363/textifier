@@ -28,4 +28,7 @@ export interface EditorState {
 export interface ContentMetadata {
   wordCount: number;
   characterCount: number;
+  userId: string,
+  userEmail: string | null;
+  userName: string | null;
 }
