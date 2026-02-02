@@ -5,6 +5,7 @@ import {
   orderBy,
   onSnapshot,
   type Unsubscribe,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { VersionListItem } from '../types/version.types';
@@ -60,6 +61,16 @@ export function useVersionHistory({
 
           const versionList: VersionListItem[] = snapshot.docs.map(doc => {
             const data = doc.data();
+            
+            // Handle null timestamps from serverTimestamp()
+            let createdAt: Timestamp;
+            if (data.createdAt === null || data.createdAt === undefined) {
+              // Use current time as fallback for pending timestamps
+              createdAt = Timestamp.now();
+            } else {
+              createdAt = data.createdAt as Timestamp;
+            }
+
             return {
               id: doc.id,
               versionNumber: data.versionNumber,
@@ -68,7 +79,7 @@ export function useVersionHistory({
               createdBy: data.createdBy,
               createdByEmail: data.createdByEmail,
               createdByName: data.createdByName,
-              createdAt: data.createdAt,
+              createdAt, // Use the safe timestamp
               isRestored: data.isRestored || false,
               restoredFromVersion: data.restoredFromVersion,
               isPinned: data.isPinned || false,
@@ -118,7 +129,14 @@ export function useVersionHistory({
     monthAgo.setMonth(monthAgo.getMonth() - 1);
 
     versions.forEach(version => {
-      const versionDate = version.createdAt.toDate();
+      // Safely convert timestamp
+      let versionDate: Date;
+      try {
+        versionDate = version.createdAt.toDate();
+      } catch (err) {
+        console.warn('Invalid timestamp for version', version.versionNumber);
+        versionDate = new Date(); // Fallback to now
+      }
 
       if (versionDate >= today) {
         groups.Today.push(version);

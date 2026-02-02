@@ -11,12 +11,16 @@ interface Props {
 }
 
 export function VersionHistoryPanel({ documentId, onClose }: Props) {
-  const { groupedVersions, loading } = useVersionHistory({
+  const { groupedVersions, loading, versions } = useVersionHistory({ 
     documentId,
-    realtime: true,
+    realtime: true 
   });
 
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+
+  // Find if selected version is current
+  const selectedVersionData = versions.find(v => v.versionNumber === selectedVersion);
+  const isSelectedCurrent = selectedVersionData?.isCurrent || false;
 
   // Handle version selection
   const handleSelectVersion = (versionNumber: number) => {
@@ -46,10 +50,11 @@ export function VersionHistoryPanel({ documentId, onClose }: Props) {
   // If a version is selected, show the viewer instead of the list
   if (selectedVersion !== null) {
     return (
-      <div className="flex flex-1">
+      <div className="flex-1 flex">
         <VersionViewer
           documentId={documentId}
           versionNumber={selectedVersion}
+          isCurrent={isSelectedCurrent}
           onClose={handleCloseViewer}
           onRestoreComplete={handleRestoreComplete}
         />
@@ -59,9 +64,9 @@ export function VersionHistoryPanel({ documentId, onClose }: Props) {
 
   // Show version list
   return (
-    <aside className="flex w-80 flex-col overflow-y-auto border-l bg-white">
+    <aside className="w-80 border-l bg-white overflow-y-auto flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-4">
+      <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
         <h3 className="font-semibold text-gray-900">Version History</h3>
         {onClose && (
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -75,19 +80,19 @@ export function VersionHistoryPanel({ documentId, onClose }: Props) {
         {Object.keys(groupedVersions).length === 0 ? (
           <div className="p-4 text-center">
             <p className="text-sm text-gray-500">No version history yet</p>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="text-xs text-gray-400 mt-1">
               Versions are created automatically as you edit
             </p>
           </div>
         ) : (
           Object.entries(groupedVersions).map(([group, versions]) => (
             <div key={group} className="p-3">
-              <h4 className="mb-2 text-xs font-semibold text-gray-500">
+              <h4 className="text-xs font-semibold text-gray-500 mb-2">
                 {group}
               </h4>
 
               <div className="space-y-1">
-                {versions.map((v) => (
+                {versions.map(v => (
                   <VersionListItem
                     key={v.versionNumber}
                     version={v}
