@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/core';
 
-export type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error' | "idle";
+export type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error' | 'idle';
 
 export interface EditorProps {
   documentId: string;
@@ -28,7 +28,7 @@ export interface EditorState {
 export interface ContentMetadata {
   wordCount: number;
   characterCount: number;
-  userId: string,
+  userId: string;
   userEmail: string | null;
   userName: string | null;
 }
