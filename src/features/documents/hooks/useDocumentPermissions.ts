@@ -1,11 +1,6 @@
 // hooks/use-document-permissions.ts
 import { useEffect, useState } from 'react';
-import {
-  collection,
-  onSnapshot,
-  query,
-  orderBy,
-} from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { DocumentPermission } from '@/features/documents/types/document.types';
 
@@ -20,12 +15,7 @@ export function useDocumentPermissions(documentId: string | null) {
     setLoading(true);
     setError(null);
 
-    const ref = collection(
-      db,
-      'documents',
-      documentId,
-      'permissions'
-    );
+    const ref = collection(db, 'documents', documentId, 'permissions');
 
     const q = query(ref, orderBy('grantedAt', 'asc'));
 

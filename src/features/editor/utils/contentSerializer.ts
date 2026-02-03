@@ -53,11 +53,11 @@ function extractText(node: JSONContent): string {
  */
 export function getContentMetadata(content: JSONContent): ContentMetadata {
   const text = extractText(content).trim();
-  
+
   // Count words (split by whitespace and filter empty strings)
-  const words = text.split(/\s+/).filter(word => word.length > 0);
+  const words = text.split(/\s+/).filter((word) => word.length > 0);
   const wordCount = words.length;
-  
+
   // Count characters (excluding spaces)
   const characterCount = text.replace(/\s/g, '').length;
 

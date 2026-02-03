@@ -5,6 +5,8 @@ import { Copy, Check, X } from 'lucide-react';
 import type { VersionListItem as VersionListItemType } from '../types/version.types';
 import { updateVersionName } from '../services/versionService';
 import { useDocumentContext } from '@/features/documents/context/useDocumentContext';
+import { useDocumentAccess } from '@/features/documents/hooks/useDocumentAccess';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   version: VersionListItemType;
@@ -13,6 +15,8 @@ interface Props {
 
 export function VersionListItem({ version, onClick }: Props) {
   const { documentId } = useDocumentContext(); // ✅ Get documentId from context
+  const { role } = useDocumentAccess(documentId);
+
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(version.displayName);
   const [isSaving, setIsSaving] = useState(false);
@@ -79,7 +83,9 @@ export function VersionListItem({ version, onClick }: Props) {
   // Format time
   const timeAgo = (() => {
     try {
-      return formatDistanceToNow(version.createdAt.toDate(), { addSuffix: true });
+      return formatDistanceToNow(version.createdAt.toDate(), {
+        addSuffix: true,
+      });
     } catch {
       return 'Recently';
     }
@@ -87,47 +93,48 @@ export function VersionListItem({ version, onClick }: Props) {
 
   return (
     <div
-      className={`
-        p-3 rounded-lg border cursor-pointer transition-all
-        hover:bg-gray-50 hover:border-gray-300
-        ${version.isCurrent ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}
-      `}
+      className={`cursor-pointer rounded-lg border p-3 transition-all hover:border-gray-300 hover:bg-gray-50 ${version.isCurrent ? 'border-blue-500 bg-blue-50' : 'border-gray-200'} `}
       onClick={!isEditing ? onClick : undefined}
     >
       {/* Version name - editable */}
-      <div className="flex items-center justify-between gap-2 mb-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
         {isEditing ? (
-          <div className="flex items-center gap-1 flex-1" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex flex-1 items-center gap-1"
+            onClick={(e) => e.stopPropagation()}
+          >
             <input
               ref={inputRef}
               type="text"
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isSaving}
-              className="flex-1 px-2 py-1 text-sm font-medium border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isSaving || role === 'viewer'}
+              className="flex-1 rounded border border-blue-500 px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Version name"
             />
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-50"
-              title="Save"
-            >
-              <Check className="w-4 h-4" />
-            </button>
-            <button
+            {role !== 'viewer' && (
+              <Button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="rounded p-1 text-green-600 hover:bg-green-50 disabled:opacity-40"
+                title="Save"
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+            )}
+            <Button
               onClick={handleCancel}
               disabled={isSaving}
-              className="p-1 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+              className={`${role === 'viewer' && 'w-8 items-center justify-center'} rounded p-1 text-red-600 hover:bg-red-50 disabled:opacity-50`}
               title="Cancel"
             >
-              <X className="w-4 h-4" />
-            </button>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         ) : (
           <h4
-            className="text-sm font-medium text-gray-900 hover:text-blue-600 cursor-text flex-1"
+            className="flex-1 cursor-text text-sm font-medium text-gray-900 hover:text-blue-600"
             onClick={(e) => {
               e.stopPropagation();
               setIsEditing(true);
@@ -139,14 +146,14 @@ export function VersionListItem({ version, onClick }: Props) {
         )}
 
         {version.isCurrent && (
-          <span className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded-full font-medium">
+          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
             Current
           </span>
         )}
       </div>
 
       {/* Metadata */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="mb-2 flex items-center gap-2">
         <UserAttributionBadge
           userId={version.createdBy}
           userEmail={version.createdByEmail}
@@ -157,11 +164,11 @@ export function VersionListItem({ version, onClick }: Props) {
       </div>
 
       {/* Version number and restore indicator */}
-      <div className="pl-1 flex items-center gap-4 text-xs text-gray-600">
+      <div className="flex items-center gap-4 pl-1 text-xs text-gray-600">
         <span className="font-medium">V_{version.versionNumber}</span>
         {version.isRestored && version.restoredFromVersion && (
           <div className="flex items-center gap-1.5 text-blue-600">
-            <Copy className="w-3 h-3" />
+            <Copy className="h-3 w-3" />
             <span>Copy of Version {version.restoredFromVersion}</span>
           </div>
         )}

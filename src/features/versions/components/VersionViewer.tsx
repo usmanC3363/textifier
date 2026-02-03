@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, RotateCcw, AlertCircle } from 'lucide-react';
+import { X, RotateCcw, AlertCircle, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getVersionByNumber } from '../services/versionService';
 import type { DocumentVersion } from '../types/version.types';
@@ -7,6 +7,7 @@ import { UserAttributionBadge } from './UserAttributionBadge';
 import { formatDateTime } from '@/lib/utils/date';
 import { RestoreDialog } from './RestoreDialog';
 import { useVersionRestore } from '../hooks/useVersionRestore';
+import { useDocumentAccess } from '@/features/documents/hooks/useDocumentAccess';
 
 interface VersionViewerProps {
   documentId: string;
@@ -27,10 +28,16 @@ export function VersionViewer({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const { role } = useDocumentAccess(documentId || null);
 
-  const { restoreVersion, isRestoring, error: restoreError } = useVersionRestore({
+  const {
+    restoreVersion,
+    isRestoring,
+    error: restoreError,
+  } = useVersionRestore({
     documentId,
     onRestoreComplete,
+    role,
   });
 
   // Fetch version content
@@ -81,24 +88,29 @@ export function VersionViewer({
     }
   };
 
+  // Loading
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
+      <div className="flex flex-1 items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-sm text-gray-600">Loading version {versionNumber}...</p>
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+          <p className="text-sm text-gray-600">
+            Loading version {versionNumber}...
+          </p>
         </div>
       </div>
     );
   }
 
+  // Error or if version not found
+
   if (error || !version) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Failed to load version</h3>
-          <p className="text-sm text-gray-600 mb-4">
+      <div className="flex flex-1 items-center justify-center bg-gray-50">
+        <div className="max-w-md text-center">
+          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
+          <h3 className="mb-2 text-lg font-semibold">Failed to load version</h3>
+          <p className="mb-4 text-sm text-gray-600">
             {error?.message || 'Version not found'}
           </p>
           <Button variant="outline" onClick={onClose}>
@@ -111,23 +123,23 @@ export function VersionViewer({
 
   return (
     <>
-      <div className="flex-1 flex flex-col bg-white">
+      <div className="flex flex-1 flex-col bg-white">
         {/* Header */}
         <div className="border-b bg-gray-50 px-6 py-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               {/* Version title */}
-              <div className="flex items-center gap-3 mb-2">
+              <div className="mb-2 flex items-center gap-3">
                 <h2 className="text-lg font-semibold text-gray-900">
                   {version.displayName}
                 </h2>
                 {isCurrent && (
-                  <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full font-medium">
+                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
                     Current Version
                   </span>
                 )}
                 {version.isRestored && (
-                  <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full">
+                  <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">
                     Restored from v{version.restoredFromVersion}
                   </span>
                 )}
@@ -150,7 +162,7 @@ export function VersionViewer({
 
               {/* Description if exists */}
               {version.description && (
-                <p className="mt-2 text-sm text-gray-700 italic">
+                <p className="mt-2 text-sm italic text-gray-700">
                   "{version.description}"
                 </p>
               )}
@@ -162,12 +174,26 @@ export function VersionViewer({
               <Button
                 onClick={() => setShowRestoreDialog(true)}
                 disabled={isCurrent || isRestoring}
-                size={"sm"}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={isCurrent ? "This is already the current version" : "Restore this version"}
+                size={'sm'}
+                className="bg-blue-500 hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                title={
+                  isCurrent
+                    ? 'This is already the current version'
+                    : role === 'viewer'
+                      ? 'You dont have access to perform this action'
+                      : 'Restore this version'
+                }
               >
-                <RotateCcw className="mr-1" />
-                {isCurrent ? "Current Version" : "Restore This Version"}
+                {role === 'viewer' ? (
+                  <Pencil className="mr-1" />
+                ) : (
+                  <RotateCcw className="mr-1" />
+                )}
+                {isCurrent
+                  ? 'Current Version'
+                  : role === 'viewer'
+                    ? 'Request Access'
+                    : 'Restore This Version'}
               </Button>
               <Button variant="ghost" size="icon" onClick={onClose}>
                 <X className="h-5 w-5" />
@@ -177,18 +203,19 @@ export function VersionViewer({
 
           {/* Current version info */}
           {isCurrent && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
               <p className="text-sm text-blue-800">
-                This is the current version of your document. You cannot restore it because it's already active.
+                This is the current version of your document. You cannot restore
+                it because it's already active.
               </p>
             </div>
           )}
 
           {/* Restore error */}
           {restoreError && (
-            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" />
               <p className="text-sm text-red-800">{restoreError.message}</p>
             </div>
           )}
@@ -196,14 +223,13 @@ export function VersionViewer({
 
         {/* Content preview */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-6 py-8">
-            {renderContent()}
-          </div>
+          <div className="mx-auto max-w-4xl px-6 py-8">{renderContent()}</div>
         </div>
       </div>
 
       {/* Restore dialog */}
-      {!isCurrent && (
+      {/* WIP: replace to ask for access to edit */}
+      {!isCurrent && role !== 'viewer' && (
         <RestoreDialog
           open={showRestoreDialog}
           onOpenChange={setShowRestoreDialog}
@@ -222,7 +248,7 @@ export function VersionViewer({
  */
 function TiptapPreview({ doc }: { doc: any }) {
   if (!doc || !doc.content) {
-    return <p className="text-gray-500 italic">Empty document</p>;
+    return <p className="italic text-gray-500">Empty document</p>;
   }
 
   return (
@@ -243,7 +269,7 @@ function TiptapNode({ node }: { node: any }) {
   // Text node
   if (node.type === 'text') {
     let text: any = node.text || '';
-    
+
     // Apply marks (bold, italic, etc.)
     if (node.marks) {
       node.marks.forEach((mark: any) => {
@@ -255,10 +281,22 @@ function TiptapNode({ node }: { node: any }) {
             text = <em key="italic">{text}</em>;
             break;
           case 'code':
-            text = <code key="code" className="bg-gray-100 px-1 rounded">{text}</code>;
+            text = (
+              <code key="code" className="rounded bg-gray-100 px-1">
+                {text}
+              </code>
+            );
             break;
           case 'link':
-            text = <a key="link" href={mark.attrs?.href} className="text-blue-600 hover:underline">{text}</a>;
+            text = (
+              <a
+                key="link"
+                href={mark.attrs?.href}
+                className="text-blue-600 hover:underline"
+              >
+                {text}
+              </a>
+            );
             break;
           case 'strike':
             text = <s key="strike">{text}</s>;
@@ -269,7 +307,7 @@ function TiptapNode({ node }: { node: any }) {
         }
       });
     }
-    
+
     return <>{text}</>;
   }
 
@@ -325,7 +363,7 @@ function TiptapNode({ node }: { node: any }) {
 
     case 'blockquote':
       return (
-        <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4">
+        <blockquote className="my-4 border-l-4 border-gray-300 pl-4 italic">
           {node.content?.map((child: any, i: number) => (
             <TiptapNode key={i} node={child} />
           ))}
@@ -334,7 +372,7 @@ function TiptapNode({ node }: { node: any }) {
 
     case 'codeBlock':
       return (
-        <pre className="bg-gray-100 rounded p-4 overflow-x-auto my-4">
+        <pre className="my-4 overflow-x-auto rounded bg-gray-100 p-4">
           <code>
             {node.content?.map((child: any, i: number) => (
               <TiptapNode key={i} node={child} />
