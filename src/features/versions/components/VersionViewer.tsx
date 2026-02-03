@@ -162,10 +162,11 @@ export function VersionViewer({
               <Button
                 onClick={() => setShowRestoreDialog(true)}
                 disabled={isCurrent || isRestoring}
+                size={"sm"}
                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 title={isCurrent ? "This is already the current version" : "Restore this version"}
               >
-                <RotateCcw className="mr-2 h-4 w-4" />
+                <RotateCcw className="mr-1" />
                 {isCurrent ? "Current Version" : "Restore This Version"}
               </Button>
               <Button variant="ghost" size="icon" onClick={onClose}>

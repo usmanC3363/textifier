@@ -51,7 +51,7 @@ export function useEditor({
   const { saveStatus, lastSaved, debouncedSave, forceSave, isTypingRef } = useAutoSave({
     documentId,
     onSave: handleSave,
-    delay: 500,
+    delay: 2000,
     enabled: !isReadOnly,
   });
 
