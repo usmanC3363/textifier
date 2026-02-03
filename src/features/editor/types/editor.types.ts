@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/core';
 
-export type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error';
+export type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error' | "idle";
 
 export interface EditorProps {
   documentId: string;
