@@ -1,17 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
+import type { ContentMetadata } from '../types/editor.types';
 
-export type SaveStatus = 'saving' | 'saved' | 'error';
-
-interface Metadata {
-  wordCount: number;
-  characterCount: number;
-}
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 interface UseAutoSaveOptions {
   documentId: string;
   onSave: (
     content: string,
-    metadata: Metadata,
+    metadata: ContentMetadata,
     options: { commit: boolean }
   ) => Promise<void>;
   delay?: number;
@@ -24,40 +20,40 @@ export function useAutoSave({
   delay = 2000,
   enabled = true,
 }: UseAutoSaveOptions) {
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedContentRef = useRef<string>('');
+  const isTypingRef = useRef<boolean>(false);
+
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isTypingRef = useRef(false);
-  const isSavingRef = useRef(false);
-
   const debouncedSave = useCallback(
-    (content: string, metadata: Metadata) => {
+    (content: string, metadata: ContentMetadata) => {
       if (!enabled) return;
 
       isTypingRef.current = true;
+      setSaveStatus('saving');
 
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
 
-      timerRef.current = setTimeout(async () => {
-        if (isSavingRef.current) return;
-
+      timeoutRef.current = setTimeout(async () => {
         try {
-          isSavingRef.current = true;
-          setSaveStatus('saving');
+          if (content === lastSavedContentRef.current) {
+            setSaveStatus('saved');
+            return;
+          }
 
-          // 🔥 DRAFT SAVE ONLY
           await onSave(content, metadata, { commit: false });
 
-          setSaveStatus('saved');
+          lastSavedContentRef.current = content;
           setLastSaved(new Date());
+          setSaveStatus('saved');
         } catch (err) {
-          console.error('Autosave failed', err);
+          console.error('[AutoSave] Error:', err);
           setSaveStatus('error');
         } finally {
-          isSavingRef.current = false;
           isTypingRef.current = false;
         }
       }, delay);
@@ -66,22 +62,19 @@ export function useAutoSave({
   );
 
   const forceSave = useCallback(
-    async (content: string, metadata: Metadata) => {
+    async (content: string, metadata: ContentMetadata) => {
       if (!enabled) return;
-
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
 
       try {
         setSaveStatus('saving');
-        await onSave(content, metadata, { commit: true }); // ✅ REAL SAVE
-        setSaveStatus('saved');
+        await onSave(content, metadata, { commit: true });
+
+        lastSavedContentRef.current = content;
         setLastSaved(new Date());
+        setSaveStatus('saved');
       } catch (err) {
-        console.error('Force save failed', err);
+        console.error('[AutoSave] Force save error:', err);
         setSaveStatus('error');
-        throw err;
       }
     },
     [onSave, enabled]
