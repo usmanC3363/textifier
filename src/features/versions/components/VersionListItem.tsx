@@ -160,7 +160,7 @@ export function VersionListItem({ version, onClick }: Props) {
       <div className="pl-1 flex items-center gap-4 text-xs text-gray-600">
         <span className="font-medium">V_{version.versionNumber}</span>
         {version.isRestored && version.restoredFromVersion && (
-          <div className="flex items-center gap-0.5 text-blue-600">
+          <div className="flex items-center gap-1.5 text-blue-600">
             <Copy className="w-3 h-3" />
             <span>Copy of Version {version.restoredFromVersion}</span>
           </div>

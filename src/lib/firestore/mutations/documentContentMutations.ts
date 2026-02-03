@@ -34,8 +34,8 @@ export async function updateDocumentContent(
           wordCount: metadata.wordCount,
           characterCount: metadata.characterCount,
           userId: userId,
-          userEmail: metadata.userEmail ?? null,   // IMPORTANT – see next section
-          userName: metadata.userName ?? null,
+          userEmail: metadata.userEmail || null,   // IMPORTANT – see next section
+          userName: metadata.userName || null,
         }
       )
     } else {
