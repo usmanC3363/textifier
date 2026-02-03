@@ -3,7 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 /**
  * Document role/permission type
  */
-export type DocumentRole = 'owner' | 'editor' | 'viewer';
+export type DocumentRole = 'owner' | 'editor' | 'viewer' | null;
 
 /**
  * Document metadata (matches Firestore schema)
@@ -13,7 +13,7 @@ export interface Document {
   title: string;
   content: string;
   ownerId: string;
-  ownerEmail?: string; 
+  ownerEmail?: string;
   draftUpdatedAt?: Timestamp | Date | null;
   createdAt: Timestamp | Date | null;
   updatedAt: Timestamp | Date | null;
@@ -24,7 +24,6 @@ export interface Document {
   characterCount?: number;
   access?: Record<string, DocumentRole>; // email to role mapping
 }
-
 
 /**
  * Document with user's role information
@@ -40,7 +39,6 @@ export interface OwnableDocument {
   ownerId?: string;
   createdBy?: string;
 }
-
 
 /**
  * Document permission entry
