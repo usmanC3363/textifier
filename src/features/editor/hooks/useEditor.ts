@@ -1,7 +1,11 @@
 import { useEditor as useTiptapEditor } from '@tiptap/react';
 import { useEffect, useState } from 'react';
 import { getEditorExtensions } from '../extensions';
-import { deserializeContent, serializeContent, getContentMetadata } from '../utils/contentSerializer';
+import {
+  deserializeContent,
+  serializeContent,
+  getContentMetadata,
+} from '../utils/contentSerializer';
 import { useAutoSave } from './useAutoSave';
 import { useEditorSync } from './useEditorSync';
 import type { ContentMetadata } from '../types/editor.types';
@@ -46,13 +50,21 @@ export function useEditor({
   ) => {
     await onSave(content, metadata, options);
   };
-  
 
-  const { saveStatus, lastSaved, debouncedSave, forceSave, isTypingRef } = useAutoSave({
+  const {
+    saveStatus,
+    lastSaved,
+    debouncedSave,
+    forceSave,
+    isTypingRef,
+    cancelPendingSave,
+    isDirtyRef,
+  } = useAutoSave({
     documentId,
     onSave: handleSave,
     delay: 2000,
     enabled: !isReadOnly,
+    initialContent,
   });
 
   // Initialize Tiptap editor
@@ -62,24 +74,24 @@ export function useEditor({
     editable: !isReadOnly,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none max-w-none px-8 py-6',
+        class:
+          'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none max-w-none px-8 py-6 ',
       },
     },
 
     onUpdate: ({ editor, transaction }) => {
       if (isReadOnly) return;
       if (!transaction.docChanged) return;
-    
+
       const content = editor.getJSON();
       const serialized = serializeContent(content);
       const metadata = getContentMetadata(content);
-    
+
       setWordCount(metadata.wordCount);
       setCharacterCount(metadata.characterCount);
-    
+
       debouncedSave(serialized, metadata);
     },
-
   });
 
   // Sync with Firestore for real-time collaboration
@@ -87,7 +99,7 @@ export function useEditor({
     documentId,
     editor,
     isReadOnly,
-    isTypingRef
+    isTypingRef,
   });
 
   // Update counts on mount
@@ -109,21 +121,23 @@ export function useEditor({
 
   useEffect(() => {
     if (!editor || isReadOnly) return;
-  
+
     const handleBlur = () => {
-      const content = serializeContent(editor.getJSON());
-      const metadata = getContentMetadata(editor.getJSON());
-  
-      forceSave(content, metadata).catch(console.error);
+      // cancelPendingSave();
+      const contentJSON = editor.getJSON();
+      const serialized = serializeContent(contentJSON);
+
+      forceSave(serialized, getContentMetadata(contentJSON)).catch(
+        console.error
+      );
     };
-  
+
     editor.on('blur', handleBlur);
-  
+
     return () => {
       editor.off('blur', handleBlur);
     };
   }, [editor, isReadOnly, forceSave]);
-  
 
   return {
     editor,
