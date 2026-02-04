@@ -58,11 +58,11 @@ export function useEditor({
     forceSave,
     isTypingRef,
     cancelPendingSave,
-    isDirtyRef,
+    // isDirtyRef,
   } = useAutoSave({
     documentId,
     onSave: handleSave,
-    delay: 2000,
+    delay: 2500,
     enabled: !isReadOnly,
     initialContent,
   });
@@ -123,21 +123,22 @@ export function useEditor({
     if (!editor || isReadOnly) return;
 
     const handleBlur = () => {
-      // cancelPendingSave();
-      const contentJSON = editor.getJSON();
-      const serialized = serializeContent(contentJSON);
-
-      forceSave(serialized, getContentMetadata(contentJSON)).catch(
-        console.error
-      );
+      cancelPendingSave();
+    
+      const json = editor.getJSON();
+      const serialized = serializeContent(json);
+    
+      // ❌ no commit here
+      onSave(serialized, getContentMetadata(json), { commit: false });
     };
+    
 
     editor.on('blur', handleBlur);
 
     return () => {
       editor.off('blur', handleBlur);
     };
-  }, [editor, isReadOnly, forceSave]);
+  }, [editor, isReadOnly, forceSave, cancelPendingSave]);
 
   return {
     editor,

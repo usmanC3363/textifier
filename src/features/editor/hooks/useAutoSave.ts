@@ -18,7 +18,7 @@ interface UseAutoSaveOptions {
 export function useAutoSave({
   documentId,
   onSave,
-  delay = 2000,
+  delay = 2500,
   enabled = true,
   initialContent,
 }: UseAutoSaveOptions) {
@@ -26,6 +26,8 @@ export function useAutoSave({
   const lastSavedContentRef = useRef<string>(initialContent ?? '');
   const isTypingRef = useRef<boolean>(false);
   const isDirtyRef = useRef<boolean>(false);
+  const commitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -40,37 +42,39 @@ export function useAutoSave({
   const debouncedSave = useCallback(
     (content: string, metadata: ContentMetadata) => {
       if (!enabled) return;
-
-      if (content === lastSavedContentRef.current) {
-        return;
-      }
-
+      if (content === lastSavedContentRef.current) return;
+  
       isDirtyRef.current = true;
       isTypingRef.current = true;
       setSaveStatus('saving');
-
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
+  
+      // persistence debounce
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  
       timeoutRef.current = setTimeout(async () => {
         try {
           await onSave(content, metadata, { commit: false });
-
           lastSavedContentRef.current = content;
-          isDirtyRef.current = false;
           setLastSaved(new Date());
           setSaveStatus('saved');
-        } catch (err) {
-          console.error('[AutoSave] Error:', err);
+        } catch {
           setSaveStatus('error');
-        } finally {
-          isTypingRef.current = false;
         }
       }, delay);
+  
+      // ✅ version commit debounce (LONGER)
+      if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current);
+  
+      commitTimeoutRef.current = setTimeout(async () => {
+        if (!isDirtyRef.current) return;
+  
+        await onSave(content, metadata, { commit: true });
+        isDirtyRef.current = false;
+      }, delay * 1); // or fixed 5–10s
     },
     [onSave, delay, enabled]
   );
+  
 
   const forceSave = useCallback(
     async (content: string, metadata: ContentMetadata) => {
