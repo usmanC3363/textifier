@@ -16,7 +16,7 @@ export function UserAttributionBadge({
   showName = false,
 }: UserAttributionBadgeProps) {
   const color = getUserColor(userId);
-  const initials = getInitials(userName || userEmail);
+  const initials = getInitials(userName || userEmail || 'unknown');
   const displayName = userName || userEmail;
 
   // Size classes

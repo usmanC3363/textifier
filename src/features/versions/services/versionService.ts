@@ -62,6 +62,12 @@ export async function createVersion(
       ) as T;
     }
 
+    if (!metadata.userId) {
+      throw new Error('[createVersion] userId is required');
+    }
+
+    const safeUserEmail = metadata.userEmail || 'unknown@user';
+    const safeUserName = metadata.userName || null;
     // Create version document
     const versionData = cleanUndefined({
       versionNumber: newVersionNumber,
@@ -71,8 +77,8 @@ export async function createVersion(
       wordCount: metadata.wordCount,
       characterCount: metadata.characterCount,
       createdBy: metadata.userId,
-      createdByEmail: metadata.userEmail ?? null,
-      createdByName: metadata.userName ?? null,
+      createdByEmail: safeUserEmail,
+      createdByName: safeUserName,
       createdAt: serverTimestamp(),
       isRestored: options?.isRestored || false,
       restoredFromVersion: options?.restoredFromVersion,

@@ -45,7 +45,11 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
     await updateDocumentContent(
       documentId,
       content,
-      user.uid,
+      {
+        id: user.uid,
+        email: user.email,
+        name: user.displayName,
+      },
       metadata,
       options
     );
@@ -56,6 +60,15 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
     <TiptapEditor
       documentId={documentId}
       initialContent={document.content || ''}
+      user={
+        user
+          ? {
+              id: user.uid,
+              email: user.email,
+              name: user.displayName,
+            }
+          : null
+      }
       isReadOnly={isReadOnly}
       onSave={handleSave}
       onStatusChange={setSaveStatus}
