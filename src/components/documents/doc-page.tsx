@@ -142,7 +142,7 @@ export default function DocPage() {
       <div className="flex items-center justify-between px-4 py-2 border-b bg-background/50">
         <div className="flex items-center gap-2">
           {/* Owner Avatar */}
-          <Avatar className="h-7 w-7 ring-1 ring-primary bg-background/50 p-2">
+          <Avatar className="h-7 w-7 ring-[1.25px] ring-yellow-500 bg-background/50 p-2">
             <AvatarFallback className="text-xs">
               {document.ownerId === user?.uid ? 'You' : (
                 document.ownerEmail 
