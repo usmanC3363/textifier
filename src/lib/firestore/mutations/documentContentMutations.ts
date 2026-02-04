@@ -6,12 +6,25 @@ import type { ContentMetadata } from '@/features/editor/types/editor.types';
 export async function updateDocumentContent(
   documentId: string,
   content: string,
-  userId: string,
+  user: {
+    id: string;
+    email: string | null;
+    name: string | null;
+  },
   metadata: ContentMetadata,
   options?: {
     commit?: boolean;
   }
 ) {
+
+  if (!user?.id) {
+    console.warn(
+      '[updateDocumentContent] Skipped save — missing user.id',
+      user
+    );
+    return;
+  }
+  
   try {
     const docRef = doc(db, 'documents', documentId);
 
@@ -21,7 +34,7 @@ export async function updateDocumentContent(
         content,
         wordCount: metadata.wordCount,
         characterCount: metadata.characterCount,
-        lastEditedBy: userId,
+        lastEditedBy: user.id,
         updatedAt: serverTimestamp(),
         version: increment(1),
       });
@@ -33,9 +46,9 @@ export async function updateDocumentContent(
         {
           wordCount: metadata.wordCount,
           characterCount: metadata.characterCount,
-          userId: userId,
-          userEmail: metadata.userEmail || null,   // IMPORTANT – see next section
-          userName: metadata.userName || null,
+          userId: user.id,
+          userEmail: user.email, 
+          userName: user.name,
         }
       )
     } else {
@@ -44,7 +57,7 @@ export async function updateDocumentContent(
         content,
         wordCount: metadata.wordCount,
         characterCount: metadata.characterCount,
-        lastEditedBy: userId,
+        lastEditedBy: user.id,
         draftUpdatedAt: serverTimestamp(),
       });
     }

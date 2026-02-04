@@ -10,6 +10,11 @@ interface TiptapEditorProps {
   documentId: string;
   initialContent: string;
   isReadOnly: boolean;
+  user: {
+    id: string;
+    email: string | null;
+    name: string | null;
+  } | null,
   onSave: (content: string, metadata: ContentMetadata, options: {commit: boolean}) => Promise<void>;
   onStatusChange?: (status: SaveStatus) => void;
   placeholder?: string;
@@ -20,6 +25,7 @@ export function TiptapEditor({
   initialContent,
   isReadOnly,
   onSave,
+  user,
   onStatusChange,
   placeholder,
 }: TiptapEditorProps) {
@@ -33,6 +39,7 @@ export function TiptapEditor({
     documentId,
     initialContent,
     isReadOnly,
+    user,
     onSave,
     placeholder,
   });

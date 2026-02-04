@@ -27,7 +27,9 @@ export function useAutoSave({
   const isTypingRef = useRef<boolean>(false);
   const isDirtyRef = useRef<boolean>(false);
   const commitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+  const latestContentRef = useRef<string>(initialContent ?? '');
+  const latestMetadataRef = useRef<ContentMetadata | null>(null);
+  
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -47,6 +49,9 @@ export function useAutoSave({
       isDirtyRef.current = true;
       isTypingRef.current = true;
       setSaveStatus('saving');
+      latestContentRef.current = content;
+      latestMetadataRef.current = metadata;
+
   
       // persistence debounce
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -67,10 +72,17 @@ export function useAutoSave({
   
       commitTimeoutRef.current = setTimeout(async () => {
         if (!isDirtyRef.current) return;
-  
-        await onSave(content, metadata, { commit: true });
+        if (!latestMetadataRef.current) return;
+      
+        await onSave(
+          latestContentRef.current,
+          latestMetadataRef.current,
+          { commit: true }
+        );
+      
         isDirtyRef.current = false;
-      }, delay * 1); // or fixed 5–10s
+      }, delay * 1.75); // recommend longer than draft debounce
+      
     },
     [onSave, delay, enabled]
   );

@@ -9,13 +9,16 @@ import {
 import { useAutoSave } from './useAutoSave';
 import { useEditorSync } from './useEditorSync';
 import type { ContentMetadata } from '../types/editor.types';
-// import { type SaveStatus } from '../types/editor.types';
-// import { type JSONContent } from '@tiptap/react';
 
 interface UseEditorOptions {
   documentId: string;
   initialContent: string;
   isReadOnly: boolean;
+  user: {
+    id: string;
+    email: string | null;
+    name: string | null;
+  } | null;
   onSave: (
     content: string,
     metadata: ContentMetadata,
@@ -31,6 +34,7 @@ export function useEditor({
   documentId,
   initialContent,
   isReadOnly,
+  user,
   onSave,
   placeholder = 'Start writing...',
 }: UseEditorOptions) {
@@ -82,16 +86,25 @@ export function useEditor({
     onUpdate: ({ editor, transaction }) => {
       if (isReadOnly) return;
       if (!transaction.docChanged) return;
-
+      if (!user?.id) return; // ✅ AUTH NOT READY YET
+    
       const content = editor.getJSON();
       const serialized = serializeContent(content);
-      const metadata = getContentMetadata(content);
-
+    
+      const baseMetadata = getContentMetadata(content);
+    
+      const metadata: ContentMetadata = {
+        ...baseMetadata,
+        userId: user.id,
+        userEmail: user.email,
+        userName: user.name,
+      };
+    
       setWordCount(metadata.wordCount);
       setCharacterCount(metadata.characterCount);
-
+    
       debouncedSave(serialized, metadata);
-    },
+    },    
   });
 
   // Sync with Firestore for real-time collaboration
@@ -124,20 +137,11 @@ export function useEditor({
 
     const handleBlur = () => {
       cancelPendingSave();
-    
-      const json = editor.getJSON();
-      const serialized = serializeContent(json);
-    
-      // ❌ no commit here
-      onSave(serialized, getContentMetadata(json), { commit: false });
     };
-    
 
     editor.on('blur', handleBlur);
+    return () => {editor.off('blur', handleBlur)};
 
-    return () => {
-      editor.off('blur', handleBlur);
-    };
   }, [editor, isReadOnly, forceSave, cancelPendingSave]);
 
   return {
