@@ -1,23 +1,29 @@
 import type { ContentAnnotation } from '@/features/versions/types/version.types';
 
 /**
- * Annotate text ranges for a version based on content diff
- * Works on flattened text offsets
+ * Annotate changed text ranges between versions
+ * Operates on flattened plain-text offsets
  */
 export function annotateVersionContent(
   prevText: string,
   nextText: string,
   userId: string
 ): ContentAnnotation[] {
+  if (!nextText || !userId) return [];
+
+  // First version: everything is authored by creator
   if (!prevText) {
-    return [{
-      from: 0,
-      to: nextText.length,
-      userId,
-    }];
+    return [
+      {
+        from: 0,
+        to: nextText.length,
+        userId,
+      },
+    ];
   }
 
   let start = 0;
+
   while (
     start < prevText.length &&
     start < nextText.length &&
@@ -38,11 +44,14 @@ export function annotateVersionContent(
     endNext--;
   }
 
+  // No actual change
   if (start > endNext) return [];
 
-  return [{
-    from: start,
-    to: endNext + 1,
-    userId,
-  }];
+  return [
+    {
+      from: start,
+      to: endNext + 1,
+      userId,
+    },
+  ];
 }
