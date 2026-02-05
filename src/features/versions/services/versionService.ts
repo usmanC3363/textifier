@@ -15,6 +15,9 @@ import {
 import { db } from '@/lib/firebase/config';
 import type { DocumentVersion, VersionListItem } from '../types/version.types';
 import type { ContentMetadata } from '@/features/editor/types/editor.types';
+import { annotateVersionContent } from '../utils/annotateVersionContent';
+import { extractPlainTextFromJSON, extractPreview } from '../utils/contentText';
+import { dedupeContributors } from '../utils/contributors';
 
 const MAX_VERSIONS = 30;
 
@@ -32,81 +35,108 @@ export async function createVersion(
     description?: string;
   }
 ): Promise<DocumentVersion> {
-  try {
-    // Get current version number (starts at 1 so first version is 2)
-    const currentVersion = await getCurrentVersionNumber(documentId);
-    const newVersionNumber = currentVersion + 1;
-
-    console.log('[createVersion] Creating version:', newVersionNumber);
-
-    // Extract preview (first 200 chars of plain text)
-    const contentPreview = extractPreview(content);
-
-    // Determine display name
-    let displayName: string;
-    if (options?.description) {
-      // Custom name provided - use it
-      displayName = options.description;
-    } else if (options?.isRestored) {
-      // ✅ FIX: Restored version uses NEW version number, not original
-      // Example: Restoring v4 creates v8 → name is "Ver_8" (not "Ver_4")
-      displayName = `Ver_${newVersionNumber}`;
-    } else {
-      // Regular auto-saved version
-      displayName = `Version ${newVersionNumber}`;
-    }
-
-    function cleanUndefined<T extends Record<string, any>>(obj: T): T {
-      return Object.fromEntries(
-        Object.entries(obj).filter(([, v]) => v !== undefined)
-      ) as T;
-    }
-
-    if (!metadata.userId) {
-      throw new Error('[createVersion] userId is required');
-    }
-
-    const safeUserEmail = metadata.userEmail || 'unknown@user';
-    const safeUserName = metadata.userName || null;
-    // Create version document
-    const versionData = cleanUndefined({
-      versionNumber: newVersionNumber,
-      documentId,
-      content,
-      contentPreview,
-      wordCount: metadata.wordCount,
-      characterCount: metadata.characterCount,
-      createdBy: metadata.userId,
-      createdByEmail: safeUserEmail,
-      createdByName: safeUserName,
-      createdAt: serverTimestamp(),
-      isRestored: options?.isRestored || false,
-      restoredFromVersion: options?.restoredFromVersion,
-      displayName,
-      customName: options?.description || null, // Store custom name separately
-      description: options?.description,
-      isPinned: false,
-    });
-    
-    const versionsRef = collection(db, `documents/${documentId}/versions`);
-    const versionDocRef = await addDoc(versionsRef, versionData);
-
-    // Cleanup old versions if exceeded limit
-    await cleanupOldVersions(documentId);
-
-    console.log('[createVersion] Created version:', newVersionNumber, 'with name:', displayName);
-
-    // Return created version
-    return {
-      id: versionDocRef.id,
-      ...versionData,
-      createdAt: Timestamp.now(),
-    } as DocumentVersion;
-  } catch (error) {
-    console.error('Error creating version:', error);
-    throw error;
+  if (!metadata.userId) {
+    throw new Error('[createVersion] userId is required');
   }
+
+  // STEP 1: figure out version number
+  const currentVersion = await getCurrentVersionNumber(documentId);
+  const newVersionNumber = currentVersion + 1;
+
+  // STEP 2: fetch previous version (for diff + contributors)
+  const prevVersion = await getLatestVersion(documentId);
+
+  // STEP 3: extract text
+  const nextPlainText = extractPlainTextFromJSON(content);
+  const prevPlainText = prevVersion
+    ? extractPlainTextFromJSON(prevVersion.content)
+    : '';
+
+  // STEP 4: annotate content
+  const annotations = annotateVersionContent(
+    prevPlainText,
+    nextPlainText,
+    metadata.userId
+  );
+
+  // STEP 5: contributors
+  const contributors = dedupeContributors([
+    ...(prevVersion?.contributors ?? []),
+    {
+      userId: metadata.userId,
+      email: metadata.userEmail ?? null,
+      name: metadata.userName ?? null,
+      role: 'editor',
+    },
+  ]);
+
+  // STEP 6: preview + naming
+  const contentPreview = extractPreview(content);
+
+  let displayName: string;
+  if (options?.description) {
+    displayName = options.description;
+  } else {
+    displayName = `Version ${newVersionNumber}`;
+  }
+
+  const safeUserEmail = metadata.userEmail || 'unknown@user';
+  const safeUserName = metadata.userName || null;
+
+  const versionData: any = {
+    versionNumber: newVersionNumber,
+    documentId,
+    content,
+    contentPreview,
+    wordCount: metadata.wordCount,
+    characterCount: metadata.characterCount,
+    createdBy: metadata.userId,
+    createdByEmail: safeUserEmail,
+    createdByName: safeUserName,
+    createdAt: serverTimestamp(),
+    isRestored: Boolean(options?.isRestored),
+    displayName,
+    isPinned: false,
+  };
+  
+  // ONLY add optional fields if they EXIST
+  if (options?.restoredFromVersion !== undefined) {
+    versionData.restoredFromVersion = options.restoredFromVersion;
+  }
+  
+  if (options?.description) {
+    versionData.customName = options.description;
+    versionData.description = options.description;
+  }
+  
+  
+  // ONLY add optional fields if they EXIST
+  if (options?.restoredFromVersion !== undefined) {
+    versionData.restoredFromVersion = options.restoredFromVersion;
+  }
+  
+  if (options?.description) {
+    versionData.customName = options.description;
+    versionData.description = options.description;
+  }
+  
+
+  // STEP 7: write version
+  const versionsRef = collection(db, `documents/${documentId}/versions`);
+  const versionDocRef = await addDoc(versionsRef, versionData);
+
+  // STEP 8: cleanup (🔥 SAFE — NEVER BLOCK SAVE)
+  await cleanupOldVersions(documentId).catch(err => {
+    console.warn('[cleanupOldVersions] Non-blocking error:', err);
+  });
+
+  return {
+    id: versionDocRef.id,
+    ...versionData,
+    createdAt: Timestamp.now(),
+  } as DocumentVersion;
 }
+
 
 /**
  * Get current version number for a document
@@ -138,23 +168,29 @@ export async function getVersionHistory(
     const q = query(versionsRef, orderBy('versionNumber', 'desc'));
     const snapshot = await getDocs(q);
 
-    const currentVersion = snapshot.empty ? 1 : snapshot.docs[0].data().versionNumber;
+    if (snapshot.empty) return [];
+
+    const latestVersionNumber =
+      snapshot.docs[0]?.data()?.versionNumber ?? null;
 
     return snapshot.docs.map(doc => {
       const data = doc.data();
+
       return {
         id: doc.id,
         versionNumber: data.versionNumber,
-        displayName: data.customName || data.displayName,
-        customName: data.customName,
+        displayName: data.customName || data.displayName || `Version ${data.versionNumber}`,
+        customName: data.customName ?? null,
         createdBy: data.createdBy,
         createdByEmail: data.createdByEmail,
         createdByName: data.createdByName,
         createdAt: data.createdAt,
-        isRestored: data.isRestored || false,
-        restoredFromVersion: data.restoredFromVersion,
-        isPinned: data.isPinned || false,
-        isCurrent: data.versionNumber === currentVersion,
+        isRestored: Boolean(data.isRestored),
+        restoredFromVersion: data.restoredFromVersion ?? null,
+        isPinned: Boolean(data.isPinned),
+        isCurrent:
+          latestVersionNumber !== null &&
+          data.versionNumber === latestVersionNumber,
       };
     });
   } catch (error) {
@@ -162,6 +198,7 @@ export async function getVersionHistory(
     return [];
   }
 }
+
 
 /**
  * Get a specific version by version number
@@ -249,55 +286,37 @@ export async function deleteVersion(
  * Cleanup old versions (keep last 30, preserve pinned)
  */
 async function cleanupOldVersions(documentId: string): Promise<void> {
-  try {
-    const versionsRef = collection(db, `documents/${documentId}/versions`);
-    const q = query(versionsRef, orderBy('versionNumber', 'desc'));
-    const snapshot = await getDocs(q);
+  const versionsRef = collection(db, `documents/${documentId}/versions`);
+  const q = query(versionsRef, orderBy('versionNumber', 'desc'));
+  const snapshot = await getDocs(q);
 
-    if (snapshot.size <= MAX_VERSIONS) return;
+  if (snapshot.size <= MAX_VERSIONS) return;
 
-    // Get versions to delete (oldest, unpinned)
-    const versionsToDelete = snapshot.docs
-      .slice(MAX_VERSIONS)
-      .filter(doc => !doc.data().isPinned);
+  const unpinned = snapshot.docs.filter(d => !d.data().isPinned);
 
-    if (versionsToDelete.length === 0) return;
+  const toDelete = unpinned.slice(MAX_VERSIONS);
 
-    // Batch delete
-    const batch = writeBatch(db);
-    versionsToDelete.forEach(doc => {
-      batch.delete(doc.ref);
-    });
+  if (toDelete.length === 0) return;
 
-    await batch.commit();
-    console.log(`Cleaned up ${versionsToDelete.length} old versions`);
-  } catch (error) {
-    console.error('Error cleaning up old versions:', error);
-  }
+  const batch = writeBatch(db);
+  toDelete.forEach(doc => batch.delete(doc.ref));
+
+  await batch.commit();
 }
 
-/**
- * Extract preview text from Tiptap JSON content
- */
-function extractPreview(content: string, maxLength = 200): string {
-  try {
-    const doc = JSON.parse(content);
-    const text = extractTextFromDoc(doc);
-    return text.substring(0, maxLength) + (text.length > maxLength ? '...' : '');
-  } catch (error) {
-    return content.substring(0, maxLength);
-  }
-}
+async function getLatestVersion(
+  documentId: string
+): Promise<DocumentVersion | null> {
+  const versionsRef = collection(db, `documents/${documentId}/versions`);
+  const q = query(versionsRef, orderBy('versionNumber', 'desc'), limit(1));
+  const snapshot = await getDocs(q);
 
-/**
- * Recursively extract text from Tiptap document
- */
-function extractTextFromDoc(node: any): string {
-  if (node.type === 'text') return node.text || '';
-  
-  if (node.content) {
-    return node.content.map(extractTextFromDoc).join(' ');
-  }
-  
-  return '';
+  if (snapshot.empty) return null;
+
+  const docSnap = snapshot.docs[0];
+
+  return {
+    id: docSnap.id,
+    ...docSnap.data(),
+  } as DocumentVersion;
 }

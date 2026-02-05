@@ -33,8 +33,25 @@ export interface DocumentVersion {
   
   // Pinning (prevent auto-deletion)
   isPinned: boolean;
+  
+  // Content Annotation 
+  annotations?: ContentAnnotation[];
+  contributors?: VersionContributor[];
 }
 
+
+export interface VersionContributor {
+  userId: string;
+  email?: string | null;
+  name?: string | null;
+  role: 'owner' | 'editor';
+}
+
+export interface ContentAnnotation {
+  from: number;
+  to: number;
+  userId: string;
+}
 /**
  * Block-level change tracking for diffs
  */
