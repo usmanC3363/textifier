@@ -81,7 +81,7 @@ export function useAutoSave({
         );
       
         isDirtyRef.current = false;
-      }, delay * 1.75); // recommend longer than draft debounce
+      }, delay * 1.5); // recommend longer than draft debounce
       
     },
     [onSave, delay, enabled]

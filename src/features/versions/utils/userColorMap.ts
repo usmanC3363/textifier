@@ -3,7 +3,7 @@
  * Assigns consistent colors to users across the app
  */
 
-const USER_COLORS = [
+export const USER_COLORS = [
   '#3b82f6', // blue
   '#10b981', // green
   '#f59e0b', // amber
