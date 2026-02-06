@@ -98,6 +98,10 @@ export async function createVersion(
     displayName,
     isPinned: false,
   };
+
+  if (annotations.length > 0) {
+    versionData.annotations = annotations;
+  }
   
   // ONLY add optional fields if they EXIST
   if (options?.restoredFromVersion !== undefined) {
