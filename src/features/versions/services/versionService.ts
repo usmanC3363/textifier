@@ -11,15 +11,21 @@ import {
   serverTimestamp,
   Timestamp,
   writeBatch,
+  FieldValue,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import type { DocumentVersion, VersionListItem } from '../types/version.types';
+import type { DocumentVersion, VersionContributor, VersionListItem } from '../types/version.types';
 import type { ContentMetadata } from '@/features/editor/types/editor.types';
 import { annotateVersionContent } from '../utils/annotateVersionContent';
 import { extractPlainTextFromJSON, extractPreview } from '../utils/contentText';
 import { dedupeContributors } from '../utils/contributors';
 
 const MAX_VERSIONS = 30;
+
+type DocumentVersionWrite =
+  Omit<DocumentVersion, 'id' | 'createdAt'> & {
+    createdAt: FieldValue;
+  };
 
 /**
  * Create a new version snapshot
@@ -39,51 +45,54 @@ export async function createVersion(
     throw new Error('[createVersion] userId is required');
   }
 
-  // STEP 1: figure out version number
+  /** STEP 1: version number */
   const currentVersion = await getCurrentVersionNumber(documentId);
   const newVersionNumber = currentVersion + 1;
 
-  // STEP 2: fetch previous version (for diff + contributors)
+  /** STEP 2: previous version */
   const prevVersion = await getLatestVersion(documentId);
 
-  // STEP 3: extract text
+  /** STEP 3: plain text */
   const nextPlainText = extractPlainTextFromJSON(content);
   const prevPlainText = prevVersion
     ? extractPlainTextFromJSON(prevVersion.content)
     : '';
 
-  // STEP 4: annotate content
-  const annotations = annotateVersionContent(
+  /** STEP 4: annotations */
+  const prevAnnotations = prevVersion?.annotations ?? [];
+
+  const newAnnotations = annotateVersionContent(
     prevPlainText,
     nextPlainText,
     metadata.userId
   );
 
-  // STEP 5: contributors
-  const contributors = dedupeContributors([
+  const mergedAnnotations = [
+    ...prevAnnotations.filter(a => a.to <= nextPlainText.length),
+    ...newAnnotations,
+  ];
+
+  /** STEP 5: contributors (🔥 THIS WAS MISSING) */
+  const contributors: VersionContributor[] = dedupeContributors([
     ...(prevVersion?.contributors ?? []),
+  
     {
       userId: metadata.userId,
       email: metadata.userEmail ?? null,
       name: metadata.userName ?? null,
-      role: 'editor',
+      role: options?.isRestored ? 'owner' : 'editor',
     },
   ]);
+  
 
-  // STEP 6: preview + naming
+  /** STEP 6: preview + naming */
   const contentPreview = extractPreview(content);
 
-  let displayName: string;
-  if (options?.description) {
-    displayName = options.description;
-  } else {
-    displayName = `Version ${newVersionNumber}`;
-  }
+  const displayName =
+    options?.description ?? `Version ${newVersionNumber}`;
 
-  const safeUserEmail = metadata.userEmail || 'unknown@user';
-  const safeUserName = metadata.userName || null;
-
-  const versionData: any = {
+  /** STEP 7: build version payload */
+  const versionData: DocumentVersionWrite = {
     versionNumber: newVersionNumber,
     documentId,
     content,
@@ -91,46 +100,34 @@ export async function createVersion(
     wordCount: metadata.wordCount,
     characterCount: metadata.characterCount,
     createdBy: metadata.userId,
-    createdByEmail: safeUserEmail,
-    createdByName: safeUserName,
+    createdByEmail: metadata.userEmail || 'unknown@user',
+    createdByName: metadata.userName || undefined,
     createdAt: serverTimestamp(),
     isRestored: Boolean(options?.isRestored),
     displayName,
     isPinned: false,
   };
 
-  if (annotations.length > 0) {
-    versionData.annotations = annotations;
+  if (mergedAnnotations.length > 0) {
+    versionData.annotations = mergedAnnotations;
+    versionData.contributors = contributors;
   }
-  
-  // ONLY add optional fields if they EXIST
-  if (options?.restoredFromVersion !== undefined) {
-    versionData.restoredFromVersion = options.restoredFromVersion;
-  }
-  
-  if (options?.description) {
-    versionData.customName = options.description;
-    versionData.description = options.description;
-  }
-  
-  
-  // ONLY add optional fields if they EXIST
-  if (options?.restoredFromVersion !== undefined) {
-    versionData.restoredFromVersion = options.restoredFromVersion;
-  }
-  
-  if (options?.description) {
-    versionData.customName = options.description;
-    versionData.description = options.description;
-  }
-  
 
-  // STEP 7: write version
+  if (options?.restoredFromVersion !== undefined) {
+    versionData.restoredFromVersion = options.restoredFromVersion;
+  }
+
+  if (options?.description) {
+    versionData.customName = options.description;
+    versionData.description = options.description;
+  }
+
+  /** STEP 8: write */
   const versionsRef = collection(db, `documents/${documentId}/versions`);
   const versionDocRef = await addDoc(versionsRef, versionData);
 
-  // STEP 8: cleanup (🔥 SAFE — NEVER BLOCK SAVE)
-  await cleanupOldVersions(documentId).catch(err => {
+  /** STEP 9: cleanup (non-blocking) */
+  cleanupOldVersions(documentId).catch(err => {
     console.warn('[cleanupOldVersions] Non-blocking error:', err);
   });
 
@@ -138,7 +135,7 @@ export async function createVersion(
     id: versionDocRef.id,
     ...versionData,
     createdAt: Timestamp.now(),
-  } as DocumentVersion;
+  } satisfies DocumentVersion;
 }
 
 

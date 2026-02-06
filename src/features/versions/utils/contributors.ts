@@ -1,15 +1,10 @@
-export interface Contributor {
-    userId: string;
-    email?: string | null;
-    name?: string | null;
-    role?: string;
-    // role?: 'editor' | 'restorer';
-  }
+import type { VersionContributor } from "../types/version.types";
+
   
 export function dedupeContributors(
-contributors: Contributor[]
-): Contributor[] {
-const map = new Map<string, Contributor>();
+contributors: VersionContributor[]
+): VersionContributor[] {
+const map = new Map<string, VersionContributor>();
 
 for (const c of contributors) {
     if (!map.has(c.userId)) {
