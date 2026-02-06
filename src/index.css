@@ -85,3 +85,42 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* global.css */
+.ProseMirror {
+  white-space: pre-wrap;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.25rem;
+}
+
+.ProseMirror h1 { font-size: 2rem; font-weight: 700; }
+.ProseMirror h2 { font-size: 1.5rem; font-weight: 600; }
+.ProseMirror h3 { font-size: 1.25rem; font-weight: 600; }
+
+.ProseMirror p {
+  margin: 0.5rem 0;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.task-item > label {
+  margin-top: 0.25rem;
+}
+
+.version-annotation {
+  background-color: rgba(59, 130, 246, 0.18);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.6);
+}

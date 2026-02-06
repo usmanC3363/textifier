@@ -12,6 +12,8 @@ import { formatDateTime } from '@/lib/utils/date';
 import { DocumentEditor } from './doument-editor';
 import { Button } from '../ui/button';
 import { VersionHistoryPanel } from '@/features/versions/components/VersionHistoryPanel';
+import { VersionContributors } from '@/features/versions/components/ContributorChips';
+import { getUserColor } from '@/features/versions/utils/userColorMap';
 
 export default function DocPage() {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
@@ -54,6 +56,16 @@ export default function DocPage() {
       collaborators,
     };
   }, [document]);
+
+  const sortedCollaborators = useMemo(() => {
+    if (!collaboratorStats) return [];
+  
+    return [...collaboratorStats.collaborators].sort((a, b) => {
+      if (a.role === 'viewer' && b.role !== 'viewer') return 1;
+      if (a.role !== 'viewer' && b.role === 'viewer') return -1;
+      return 0;
+    });
+  }, [collaboratorStats]);  
 
   // Get user's role display
   const roleDisplay = useMemo(() => {
@@ -135,6 +147,13 @@ export default function DocPage() {
               )}
             </div>
           )}
+
+          {/* {document.latestVersion?.contributors && (
+            <VersionContributors
+              contributors={document.latestVersion.contributors}
+            />
+          )} */}
+
         </div>
       </div>
 
@@ -142,15 +161,24 @@ export default function DocPage() {
       <div className="flex items-center justify-between px-4 py-2 border-b bg-background/50">
         <div className="flex items-center gap-2">
           {/* Owner Avatar */}
-          <Avatar className="h-7 w-7 ring-[1.25px] ring-yellow-500 bg-background/50 p-2">
-            <AvatarFallback className="text-xs">
-              {document.ownerId === user?.uid ? 'You' : (
-                document.ownerEmail 
-                  ? document.ownerEmail.charAt(0).toUpperCase()
-                  : "O"
-              )}
-            </AvatarFallback>
-          </Avatar>
+          {collaboratorStats?.collaborators.map((collab) => (
+            <Avatar className="h-7 w-7 ring-1 ring-yellow-500 p-px" key={collab.email} 
+            style={{
+                backgroundColor: 
+                collab.role === "viewer"
+                ? undefined
+                : getUserColor(collab.email),
+              }}
+              >
+              <AvatarFallback className="text-xs">
+                {document.ownerId === user?.uid ? 'You' : (
+                  document.ownerEmail 
+                    ? document.ownerEmail.charAt(0).toUpperCase()
+                    : "O"
+                )}
+              </AvatarFallback>
+            </Avatar>
+          ))}
 
           {/* Active Collaborators from access map */}
           {collaboratorStats?.collaborators.slice(0, 5).map((collab, idx) => (

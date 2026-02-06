@@ -44,23 +44,24 @@ export function InviteCollaboratorDialog({
           <DialogDescription/>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           <Input
             placeholder="Email address"
             value={email}
+            className="border-black/70"
             onChange={(e) => setEmail(e.target.value)}
           />
 
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as any)}
-            className="w-full border rounded px-2 py-1"
+            className="w-full border rounded px-2 py-1.5 focus-visible:outline-[0.25px] focus-visible:outline-black/20 border-black/40"
           >
-            <option value="editor">Editor</option>
+            <option value="editor" className="">Editor</option>
             <option value="viewer">Viewer</option>
           </select>
 
-          <Button onClick={handleInvite} disabled={loading}>
+          <Button variant={"outline"} className="border-black " onClick={handleInvite} disabled={loading}>
             Send invite
           </Button>
         </div>

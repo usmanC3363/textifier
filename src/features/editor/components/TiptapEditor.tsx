@@ -51,6 +51,12 @@ export function TiptapEditor({
     }
   }, [saveStatus, onStatusChange]);
 
+  // useEffect(() => {
+  //   if (!editor) return;
+  
+  //   editor.commands.setContent(initialContent, {emitUpdate: false});
+  // }, [initialContent]);
+
   if (!editor) {
     return (
       <div className="flex items-center justify-center h-64">
