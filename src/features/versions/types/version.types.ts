@@ -15,15 +15,15 @@ export interface DocumentVersion {
   // Metadata
   wordCount: number;
   characterCount: number;
-  
+
   // Authorship
   createdBy: string; // User ID
   createdByEmail: string;
   createdByName?: string; // Display name
   createdAt: Timestamp;
-  
+
   // Restoration tracking
-  isRestored: boolean; // True if this is a restored version
+  isRestored: boolean; 
   restoredFromVersion?: number; // Original version number if restored
   
   // Custom naming
@@ -33,11 +33,34 @@ export interface DocumentVersion {
   
   // Pinning (prevent auto-deletion)
   isPinned: boolean;
-  
+
   // Content Annotation 
   annotations?: ContentAnnotation[];
   contributors?: VersionContributor[];
 }
+
+/**
+ * Version list item (sidebar)
+ */
+export interface VersionListItem {
+  id: string;
+  versionNumber: number;
+  displayName: string;
+  customName?: string;
+
+  createdBy: string;
+  createdByEmail: string;
+  createdByName?: string;
+
+  /** 🔥 Timestamp — NOT serverTimestamp */
+  createdAt: Timestamp;
+
+  isRestored: boolean;
+  restoredFromVersion?: number;
+  isPinned: boolean;
+  isCurrent: boolean;
+}
+
 
 
 export interface VersionContributor {
@@ -92,23 +115,6 @@ export interface VersionDiff {
   };
 }
 
-/**
- * Version list item (for sidebar display)
- */
-export interface VersionListItem {
-  id: string;
-  versionNumber: number;
-  displayName: string;
-  customName?: string;
-  createdBy: string;
-  createdByEmail: string;
-  createdByName?: string;
-  createdAt: Timestamp;
-  isRestored: boolean;
-  restoredFromVersion?: number;
-  isPinned: boolean;
-  isCurrent: boolean; // Is this the active version?
-}
 
 /**
  * User color assignment for attribution
