@@ -8,7 +8,7 @@ import { formatDateTime } from '@/lib/utils/date';
 import { RestoreDialog } from './RestoreDialog';
 import { useVersionRestore } from '../hooks/useVersionRestore';
 import { useDocumentAccess } from '@/features/documents/hooks/useDocumentAccess';
-import { VersionContributors } from './ContributorChips';
+import { VersionContributors } from './version-contributors';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { getEditorExtensions } from '@/features/editor/extensions';
 import { VersionAnnotationsExtension } from '@/features/editor/extensions/VersionAnnotationExtension';
@@ -51,6 +51,7 @@ export function VersionViewer({
       ...getEditorExtensions(),
       VersionAnnotationsExtension.configure({
         annotations: [],
+        // hoveredUserId: undefined,
       }),
     ],
     content: { type: 'doc', content: [] },
@@ -201,7 +202,7 @@ export function VersionViewer({
         <div className="border-b bg-gray-50 px-6 py-4">
           {version.contributors && version.contributors.length > 0 && (
             <div className="mb-3">
-              <VersionContributors contributors={version.contributors} />
+              <VersionContributors editor={editor} contributors={version.contributors} />
             </div>
           )}
 

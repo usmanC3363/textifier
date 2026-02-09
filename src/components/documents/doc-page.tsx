@@ -12,7 +12,7 @@ import { formatDateTime } from '@/lib/utils/date';
 import { DocumentEditor } from './doument-editor';
 import { Button } from '../ui/button';
 import { VersionHistoryPanel } from '@/features/versions/components/VersionHistoryPanel';
-import { VersionContributors } from '@/features/versions/components/ContributorChips';
+import { VersionContributors } from '@/features/versions/components/version-contributors';
 import { getUserColor } from '@/features/versions/utils/userColorMap';
 
 export default function DocPage() {
