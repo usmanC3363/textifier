@@ -3,8 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
 export default function LoginPage() {
-  const { signIn, signInWithGoogle, loading, error } = useAuth();
+  
   const navigate = useNavigate();
+  // const user = useAuth();
+  // if(user) {navigate("/dashboard", { replace: true });};
+  const { signIn, signInWithGoogle, loading, error } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
