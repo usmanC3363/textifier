@@ -4,15 +4,20 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 import type { ContentAnnotation } from '@/features/versions/types/version.types'
 import { getUserColor } from '@/features/versions/utils/userColorMap'
 
-const annotationPluginKey = new PluginKey<{
+type AnnotationPluginState = {
   annotations: ContentAnnotation[]
   hoveredUserId?: string
-}>('versionAnnotations')
+}
+
+const annotationPluginKey = new PluginKey<AnnotationPluginState>(
+  'versionAnnotations'
+)
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     versionAnnotation: {
       setAnnotations: (annotations: ContentAnnotation[]) => ReturnType
+      setHoveredUser: (userId?: string | null) => ReturnType
     }
   }
 }
@@ -25,31 +30,65 @@ export const VersionAnnotationsExtension = Extension.create({
       setAnnotations:
         (annotations: ContentAnnotation[]) =>
         ({ editor }) => {
-          const tr = editor.state.tr
-          tr.setMeta(annotationPluginKey, { annotations })
-          editor.view.dispatch(tr)
+          editor.view.dispatch(
+            editor.state.tr.setMeta(annotationPluginKey, { annotations })
+          )
           return true
         },
+
+        setHoveredUser:
+        (userId: string | null | undefined) =>
+        ({ editor }) => {
+          editor.view.dispatch(
+            editor.state.tr.setMeta(annotationPluginKey, {
+              hoveredUserId: userId,
+            })
+          )
+          return true
+        }
     }
   },
 
   addProseMirrorPlugins() {
     return [
-      new Plugin({
+      new Plugin<AnnotationPluginState>({
         key: annotationPluginKey,
 
         state: {
           init() {
-            return { annotations: [], hoveredUserId: undefined }
+            return {
+              annotations: [],
+              hoveredUserId: undefined,
+            }
           },
 
           apply(tr, value) {
             const meta = tr.getMeta(annotationPluginKey)
-            if (meta?.annotations) {
-              return { ...value, annotations: meta.annotations }
+            let annotations = value.annotations
+          
+            // 🔥 remap positions when doc changes
+            if (tr.docChanged) {
+              annotations = annotations
+                .map(ann => {
+                  const from = tr.mapping.map(ann.from)
+                  const to = tr.mapping.map(ann.to)
+                  return from < to ? { ...ann, from, to } : null
+                })
+                .filter(Boolean) as typeof annotations
             }
-            return value
-          },
+          
+            if (!meta) {
+              return { ...value, annotations }
+            }
+          
+            return {
+              annotations: meta.annotations ?? annotations,
+              hoveredUserId:
+                meta.hoveredUserId !== undefined
+                  ? meta.hoveredUserId
+                  : value.hoveredUserId,
+            }
+          }               
         },
 
         props: {
@@ -59,27 +98,40 @@ export const VersionAnnotationsExtension = Extension.create({
               return null
             }
 
+            
+            const { annotations, hoveredUserId } = pluginState
             const decorations: Decoration[] = []
             const docSize = state.doc.content.size
 
-            for (const ann of pluginState.annotations) {
+            // 
+            for (const ann of annotations) {
               if (ann.from >= ann.to || ann.to > docSize) continue
+              
+              // 🔥 WHITESPACE FIX (CRITICAL)
+              let from = ann.from + 1
+              let to = ann.to + 1
+              if (from < 0 || to > state.doc.content.size) continue
 
+              // if (state.doc.textContent.length < ann.to) continue
+            
               const color = getUserColor(ann.userId)
-
+              const isHovered = hoveredUserId === ann.userId
+              const dimOthers = hoveredUserId && !isHovered
+            
               decorations.push(
-                Decoration.inline(ann.from, ann.to, {
+                Decoration.inline(from, to, {
+                  'data-user-id': ann.userId,
                   style: `
                     background-color: ${color}99;
                     border-bottom: 2px solid ${color};
-                    padding: 2px 3px 2px 3px;
-                    border-radius: 0px;
-                    margin: 0px 0px 0px 0px;
+                    transition: all 150ms ease;
+                    ${isHovered ? `box-shadow: 0 0 4px ${color};` : ''}
+                    ${dimOthers ? `opacity: 0.35;` : ''}
                   `,
-                  'data-user-id': ann.userId,
                 })
               )
             }
+            
 
             return DecorationSet.create(state.doc, decorations)
           },
