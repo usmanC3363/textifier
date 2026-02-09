@@ -19,7 +19,7 @@ export function VersionContributors({
             editor.commands.setHoveredUser(c.userId)
           }
           onMouseLeave={() =>
-            editor.commands.setHoveredUser(undefined)
+            editor.commands.setHoveredUser(null)
           }
           className="flex items-center gap-2 rounded-full px-2 py-1 text-xs cursor-pointer"
           style={{
