@@ -28,7 +28,7 @@ export function DocumentTitle() {
       value={title}
       onChange={(e) => setTitle(e.target.value)}
       onBlur={handleBlur}
-      className="h-9 max-w-xs md:text-base border-none px-0 text-base font-medium shadow-none focus-visible:ring-0"
+      className="h-7 border-[0px] w-44 hover:border-[1px] md:text-base px-2 text-base font-medium shadow-none focus-visible:ring-0"
     />
   );
 }

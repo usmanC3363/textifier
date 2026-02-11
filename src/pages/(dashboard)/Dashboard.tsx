@@ -125,10 +125,10 @@ function DashboardContent() {
         </div>
 
         {/* Filters Tabs */}
-        <div className="mb-6 flex gap-2">
+        <div className="mb-8 flex gap-2">
           <Button
             onClick={() => setFilter('all')}
-            className={`rounded-md px-4 py-2 font-medium ${
+            className={`border border-muted-foreground/35 rounded-md px-4 py-px h-8 font-medium ${
               filter === 'all'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -138,7 +138,7 @@ function DashboardContent() {
           </Button>
           <Button
             onClick={() => setFilter('owned')}
-            className={`rounded-md px-4 py-2 font-medium ${
+            className={`border border-muted-foreground/35 rounded-md px-4 py-px h-8 font-medium ${
               filter === 'owned'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -148,7 +148,7 @@ function DashboardContent() {
           </Button>
           <Button
             onClick={() => setFilter('shared')}
-            className={`rounded-md px-4 py-2 font-medium ${
+            className={`border border-muted-foreground/35 rounded-md px-4 py-px h-8 font-medium ${
               filter === 'shared'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -158,7 +158,7 @@ function DashboardContent() {
           </Button>
           <Button
             onClick={() => setFilter('archived')}
-            className={`rounded-md px-4 py-2 font-medium ${
+            className={`border border-muted-foreground/35 rounded-md px-4 py-px h-8 font-medium ${
               filter === 'archived'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'

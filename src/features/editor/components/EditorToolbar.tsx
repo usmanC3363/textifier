@@ -73,7 +73,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   );
 
   return (
-    <div className="border-b bg-white sticky top-0 z-0 px-4 py-2">
+    <div className="border-muted-foreground/35 border-x border-t rounded-t rounded-tl rounded-tr bg-white sticky top-0 z-0 px-4 py-2">
       <div className="flex flex-wrap items-center gap-1">
         {/* Undo/Redo */}
         <ToolbarButton

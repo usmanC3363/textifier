@@ -30,7 +30,7 @@ export function UserAttributionBadge({
     <div className="flex items-center gap-2">
       {/* Avatar circle */}
       <div
-        className={`${sizeClasses[size]} flex items-center justify-center rounded-full font-semibold text-white`}
+        className={`${sizeClasses[size]} flex items-center justify-center rounded-full font-medium text-white`}
         style={{ backgroundColor: color }}
         title={displayName}
       >

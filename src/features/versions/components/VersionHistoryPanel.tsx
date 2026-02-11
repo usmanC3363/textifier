@@ -64,9 +64,9 @@ export function VersionHistoryPanel({ documentId, onClose }: Props) {
 
   // Show version list
   return (
-    <aside className="w-80 border-l bg-white overflow-y-auto flex flex-col">
+    <aside className="max-md:w-full w-[21rem] border-l bg-white overflow-y-auto flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
+      <div className="p-4 pl-[19px] border-b flex items-center justify-between sticky top-0 bg-white z-10">
         <h3 className="font-semibold text-gray-900">Version History</h3>
         {onClose && (
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -86,12 +86,12 @@ export function VersionHistoryPanel({ documentId, onClose }: Props) {
           </div>
         ) : (
           Object.entries(groupedVersions).map(([group, versions]) => (
-            <div key={group} className="p-3">
+            <div key={group} className="p-3 pl-[19px]">
               <h4 className="text-xs font-semibold text-gray-500 mb-2">
                 {group}
               </h4>
 
-              <div className="space-y-1">
+              <div className="space-y-2 grid max-md:grid-cols-2 gap-x-4">
                 {versions.map(v => (
                   <VersionListItem
                     key={v.versionNumber}
