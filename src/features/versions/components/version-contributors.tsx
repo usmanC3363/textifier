@@ -60,7 +60,7 @@ export function VersionContributors({
                 : undefined
             }
           >
-            <Avatar className={variant === 'compact' ? 'size-7 group flex gap-x-2 group-hover:pr-[9.5rem] items-center group-hover:w-20 border transition-all duration-300 ease-in-out' : 'size-6'}
+            <Avatar className={variant === 'compact' ? 'size-7 group flex gap-x-3 group-hover:pr-[11.25vw] items-center group-hover:w-20 border transition-all duration-300 ease-in-out' : 'size-6'}
              style={{
               backgroundColor: color,
             }}>
@@ -73,7 +73,7 @@ export function VersionContributors({
               >
                 <span 
                 className={`${variant === 'compact'
-                              ? 'text-xs text-center group-hover:font-medium tracking-wide transition-all duration-150 ease-linear group-hover:text-sm size-7 group-hover:mt-2 group-hover:ml-2 mt-2.5 '
+                              ? 'text-xs text-center group-hover:font-medium tracking-wide transition-all duration-150 ease-linear group-hover:text-sm size-7 group-hover:mt-2 group-hover:ml-2.5 mt-3 '
                               : '-mt-1'
                             }`}
                 style={{
@@ -83,7 +83,7 @@ export function VersionContributors({
                 </span>
               </AvatarFallback>
               {variant === 'compact' && (
-                <span className='opacity-0 justify-self-end text-white -mt-px scale-0 group-hover:opacity-100 transition-all duration-150 ease-linear text-sm group-hover:scale-100 z-50 delay-75'
+                <span className='opacity-0 justify-self-end text-white -mt-px scale-0 group-hover:opacity-100 transition-all duration-150 ease-linear text-[13px] group-hover:scale-100 z-50 delay-75'
                 style={{
                   backgroundColor: color,
                   transformOrigin: "right center",

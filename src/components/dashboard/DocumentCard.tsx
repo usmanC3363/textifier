@@ -50,13 +50,13 @@ export function DocumentCard({
 
   return (
     <div
-      className={`cursor-pointer rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg ${
+      className={`cursor-pointer border-muted-foreground/35 border rounded-lg lg:w-96 bg-white p-6 shadow-md transition-shadow hover:shadow-lg ${
         document.isArchived ? 'opacity-60' : ''
       }`}
       onClick={handleClick}
     >
       <div className="mb-2 flex items-start justify-between">
-        <h3 className="flex-1 truncate text-xl font-semibold text-gray-900">
+        <h3 className="flex-1 truncate text-[22px] font-bold text-gray-900">
           {document.title || 'Untitled Document'}
         </h3>
         <div className="ml-2 flex items-center gap-2">
@@ -66,7 +66,7 @@ export function DocumentCard({
             </span>
           )}
           <span
-            className={`rounded px-2 py-1 text-xs ${
+            className={`rounded px-2.5 py-[2px] text-xs ${
               document.userRole === 'owner'
                 ? 'bg-blue-100 text-blue-700'
                 : document.userRole === 'editor'
@@ -79,13 +79,13 @@ export function DocumentCard({
         </div>
       </div>
 
-      <div className="mb-4 text-sm text-gray-500">
+      <div className="mb-5 text-sm text-gray-500">
         <p>Updated {timeAgo}</p>
         {document.wordCount !== undefined && (
           <p>{document.wordCount.toLocaleString()} words</p>
         )}
       </div>
-      <div className="mb-2 text-sm text-gray-500">
+      <div className="mb-2.5 text-sm text-gray-500">
       <VersionContributors
         contributors={document.latestVersionContributors ?? []}
         variant="compact"
@@ -97,7 +97,7 @@ export function DocumentCard({
         <div className="text-xs text-gray-400">Version {document.version}</div>
       
 
-        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex gap-x-3" onClick={(e) => e.stopPropagation()}>
           {document.isOwner && (
             <>
               <Button
