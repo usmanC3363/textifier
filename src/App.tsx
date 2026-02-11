@@ -11,71 +11,74 @@ import DocumentPage from './pages/documents/DocumentPage';
 import { Toaster } from 'sonner';
 import { AuthGuard } from './components/auth/AuthGuard';
 
+import { AppErrorBoundary } from '@/components/AppErrorBoundary';
+import { DocumentErrorBoundary } from '@/components/documents/DocumentErrorBoundary';
+import { GuestGuard } from './components/auth/GuestGuard';
+
 function App() {
   return (
-  <>
-   <Toaster
-        // position="top-right"
-        // richColors
-        // closeButton
-        duration={1800}
-      />
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-        <Route
-              path="/login"
-              element={
-                <AuthGuard requireAuth={false}>
-                  <DashboardLayout>
-                    <LoginPage />
-                  </DashboardLayout>
-                </AuthGuard>
-              }
-            />
-            
-            <Route
-              path="/signup"
-              element={
-                <AuthGuard requireAuth={false}>
-                  <DashboardLayout>
-                    <SignUpPage />
-                  </DashboardLayout>
-                </AuthGuard>
-              }
-            />
+    <>
+      <Toaster duration={1800} />
 
-            {/* Protected routes - require authentication */}
-            <Route
-              path="/dashboard"
-              element={
-                <AuthGuard requireAuth={true}>
-                  <DashboardLayout>
-                    <DashboardPage />
-                  </DashboardLayout>
-                </AuthGuard>
-              }
-            />
+      <BrowserRouter>
+        <AuthProvider>
+          <AppErrorBoundary>
+            <Routes>
 
+              <Route
+                path="/login"
+                element={
+                  <GuestGuard>
+                    <DashboardLayout>
+                      <LoginPage />
+                    </DashboardLayout>
+                  </GuestGuard>
+                }
+              />
 
-          <Route
-            path="/document/:documentId"
-            element={
-              <AuthGuard requireAuth={true}>
-                <DocumentPage />
-              </AuthGuard>
-            }
-          />
-          
+              <Route
+                path="/signup"
+                element={
+                  <GuestGuard>
+                    <DashboardLayout>
+                      <SignUpPage />
+                    </DashboardLayout>
+                  </GuestGuard>
+                }
+              />
 
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          {/* 404 catch-all */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+              <Route
+                path="/dashboard"
+                element={
+                  <AuthGuard requireAuth={true}>
+                    <DashboardLayout>
+                      <DashboardPage />
+                    </DashboardLayout>
+                  </AuthGuard>
+                }
+              />
+
+              <Route
+                path="/document/:documentId"
+                element={
+                  <AuthGuard requireAuth={true}>
+                    <DocumentErrorBoundary>
+                      <DocumentPage />
+                    </DocumentErrorBoundary>
+                  </AuthGuard>
+                }
+              />
+
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
+            </Routes>
+          </AppErrorBoundary>
+        </AuthProvider>
+      </BrowserRouter>
     </>
   );
 }
+
 
 export default App;

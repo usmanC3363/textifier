@@ -14,6 +14,7 @@ import { Button } from '../ui/button';
 import { VersionHistoryPanel } from '@/features/versions/components/VersionHistoryPanel';
 import { VersionContributors } from '@/features/versions/components/version-contributors';
 import { getUserColor } from '@/features/versions/utils/userColorMap';
+import { getVersionByNumber } from '@/features/versions/services/versionService';
 
 export default function DocPage() {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
@@ -147,13 +148,6 @@ export default function DocPage() {
               )}
             </div>
           )}
-
-          {/* {document.latestVersion?.contributors && (
-            <VersionContributors
-              contributors={document.latestVersion.contributors}
-            />
-          )} */}
-
         </div>
       </div>
 
