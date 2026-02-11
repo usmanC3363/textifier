@@ -50,7 +50,7 @@ export function DocumentCard({
 
   return (
     <div
-      className={`cursor-pointer border-muted-foreground/35 border rounded-lg lg:w-96 bg-white p-6 shadow-md transition-shadow hover:shadow-lg ${
+      className={`cursor-pointer border-muted-foreground/35 border rounded-lg lg:w-96 bg-white p-6 shadow-lg transition-shadow hover:shadow-xl ${
         document.isArchived ? 'opacity-60' : ''
       }`}
       onClick={handleClick}

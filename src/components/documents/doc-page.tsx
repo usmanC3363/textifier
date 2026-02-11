@@ -109,9 +109,11 @@ export default function DocPage() {
       {/* Top Bar */}
       <DocTopBar onOpenPermissions={() => setPermissionsOpen(true)} />
 
+      <div className='box-border py-1.5 border-b'>
+
       {/* Document Info Bar */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="px-4 py-3 flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="px-4 py-2 flex items-center justify-between flex-wrap gap-3">
           {/* Left: Role Badge */}
           <div className="flex items-center gap-3">
             {roleDisplay && (
@@ -150,7 +152,7 @@ export default function DocPage() {
       </div>
 
       {/* Collaborators Avatars */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-background/50">
+      <div className="flex items-center justify-between px-4 py-2 bg-background/50">
         <VersionContributors
           contributors={document.latestVersionContributors ?? []}
           variant="compact"
@@ -165,6 +167,7 @@ export default function DocPage() {
           {showVersions && <X className="h-4 w-4" />}
           {showVersions ? 'Hide Version History' : 'Version History'}
         </Button>
+      </div>
       </div>
 
       {/* Document Metadata */}
@@ -190,19 +193,21 @@ export default function DocPage() {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex flex-1 overflow-hidden">
+      <main className="grid max-md:grid-rows-[auto_auto] gap-x-6 md:grid-cols-[1fr_auto] overflow-hidden">
         {/* Editor Area */}
-        <div className="flex-1 overflow-y-auto px-2 py-6 sm:px-4">
+        <div className="flex-1 overflow-y-auto px-2 py-6 sm:px-4 max-md:order-2">
           <DocumentEditor documentId={documentId} />
         </div>
 
         {/* Version History Panel (slides in from right) */}
+        <div className='max-md:w-full'>
         {showVersions && (
           <VersionHistoryPanel
-            documentId={documentId}
-            onClose={() => setShowVersions(false)}
+          documentId={documentId}
+          onClose={() => setShowVersions(false)}
           />
         )}
+        </div>
       </main>
 
       {/* Permissions / Settings Sheet */}
