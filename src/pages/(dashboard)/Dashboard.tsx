@@ -10,19 +10,10 @@ import {
 import { DocumentList } from '@/components/dashboard/DocumentList';
 import { CreateDocumentDialog } from '@/components/dashboard/CreateDocumentDialog';
 import { Button } from '@/components/ui/button';
-// import { CleanupAllButton } from '@/lib/utils/cleanupDocumentAccess';
 
-/**
- * Dashboard Page - Main document management interface
- *
- * Features:
- * - List documents user owns or has access to
- * - Create new document
- * - Delete document (owner only)
- * - Real-time updates via Firestore snapshots
- */
+
 export default function DashboardPage() {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   return (
     <AuthGuard requireAuth>

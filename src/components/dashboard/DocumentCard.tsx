@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { type DocumentWithRole } from '@/features/documents/types/document.types';
 import { formatDistanceToNow } from '@/lib/utils/date';
 import { Button } from '../ui/button';
+import { VersionContributors } from '@/features/versions/components/version-contributors';
 
 interface DocumentCardProps {
   document: DocumentWithRole;
@@ -84,9 +85,17 @@ export function DocumentCard({
           <p>{document.wordCount.toLocaleString()} words</p>
         )}
       </div>
+      <div className="mb-2 text-sm text-gray-500">
+      <VersionContributors
+        contributors={document.latestVersionContributors ?? []}
+        variant="compact"
+        maxVisible={3}
+       />
+      </div>
 
       <div className="flex items-center justify-between">
         <div className="text-xs text-gray-400">Version {document.version}</div>
+      
 
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           {document.isOwner && (

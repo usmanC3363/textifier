@@ -1,3 +1,4 @@
+import type { VersionContributor } from '@/features/versions/types/version.types';
 import { Timestamp } from 'firebase/firestore';
 
 /**
@@ -22,6 +23,7 @@ export interface Document {
   isArchived: boolean;
   wordCount?: number;
   characterCount?: number;
+  latestVersionContributors?: VersionContributor[];
   access?: Record<string, DocumentRole>; // email to role mapping
 }
 

@@ -72,10 +72,9 @@ export async function createVersion(
     ...newAnnotations,
   ];
 
-  /** STEP 5: contributors (🔥 THIS WAS MISSING) */
+  /** STEP 5: contributors (CORRECT, KEEP THIS) */
   const contributors: VersionContributor[] = dedupeContributors([
     ...(prevVersion?.contributors ?? []),
-  
     {
       userId: metadata.userId,
       email: metadata.userEmail ?? null,
@@ -83,7 +82,6 @@ export async function createVersion(
       role: options?.isRestored ? 'owner' : 'editor',
     },
   ]);
-  
 
   /** STEP 6: preview + naming */
   const contentPreview = extractPreview(content);
@@ -106,11 +104,11 @@ export async function createVersion(
     isRestored: Boolean(options?.isRestored),
     displayName,
     isPinned: false,
+    contributors, // 🔥 ALWAYS STORE CONTRIBUTORS
   };
 
   if (mergedAnnotations.length > 0) {
     versionData.annotations = mergedAnnotations;
-    versionData.contributors = contributors;
   }
 
   if (options?.restoredFromVersion !== undefined) {
@@ -122,11 +120,21 @@ export async function createVersion(
     versionData.description = options.description;
   }
 
-  /** STEP 8: write */
+  /** STEP 8: write version */
   const versionsRef = collection(db, `documents/${documentId}/versions`);
   const versionDocRef = await addDoc(versionsRef, versionData);
 
-  /** STEP 9: cleanup (non-blocking) */
+  /** STEP 9: 🔥 SNAPSHOT CONTRIBUTORS ON DOCUMENT */
+  const documentRef = doc(db, 'documents', documentId);
+
+  await updateDoc(documentRef, {
+    version: newVersionNumber,
+    latestVersionContributors: contributors,
+    updatedAt: serverTimestamp(),
+    lastEditedBy: metadata.userId,
+  });
+
+  /** STEP 10: cleanup (non-blocking) */
   cleanupOldVersions(documentId).catch(err => {
     console.warn('[cleanupOldVersions] Non-blocking error:', err);
   });
@@ -137,6 +145,7 @@ export async function createVersion(
     createdAt: Timestamp.now(),
   } satisfies DocumentVersion;
 }
+
 
 
 /**
@@ -320,4 +329,18 @@ async function getLatestVersion(
     id: docSnap.id,
     ...docSnap.data(),
   } as DocumentVersion;
+}
+
+export async function snapshotLatestContributors(
+  documentId: string,
+  versionNumber: number,
+  contributors: VersionContributor[]
+) {
+  const documentRef = doc(db, 'documents', documentId);
+
+  await updateDoc(documentRef, {
+    version: versionNumber,
+    latestVersionContributors: contributors,
+    updatedAt: serverTimestamp(),
+  });
 }
