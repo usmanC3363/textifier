@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useDocument } from '@/features/documents/hooks/useDocuments';
 import DocPage from '@/components/documents/doc-page';
 import { DocumentProvider } from '@/features/documents/context/DocumentProvider';
@@ -22,7 +22,7 @@ export default function DocumentPage() {
           <p>File not Found</p>
         </div>
         <Button variant={"outline"} asChild>
-          <a href="/dashboard">Back to Home</a>
+          <Link to="/dashboard">Back to Home</Link>
         </Button>
       </div>
     );

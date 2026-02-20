@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
 export default function LoginPage() {
@@ -171,9 +171,9 @@ export default function LoginPage() {
         <div className="flex w-full justify-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{' '}
-            <a href='/signup' className="text-indigo-600 hover:text-indigo-500 font-medium">
+            <Link to='/signup' className="text-indigo-600 hover:text-indigo-500 font-medium">
               Create Account
-            </a>
+            </Link>
           </p>
         </div>
       </div>
